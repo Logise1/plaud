@@ -1,19 +1,35 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grabar Clase - Plaud</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
+
     <style>
-        .recording-pulse { animation: pulse-red 2s infinite; }
-        @keyframes pulse-red {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        .recording-pulse {
+            animation: pulse-red 2s infinite;
         }
+
+        @keyframes pulse-red {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 20px rgba(239, 68, 68, 0);
+            }
+
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+        }
+
         /* Estilo para el dropdown negro solicitado */
         select {
             background-color: black !important;
@@ -26,12 +42,14 @@
             background-position: right .7em top 50%;
             background-size: .65em auto;
         }
+
         select option {
             background-color: black;
             color: white;
         }
     </style>
 </head>
+
 <body class="bg-slate-50 text-slate-800 min-h-screen font-sans">
 
     <!-- Navegación -->
@@ -49,19 +67,20 @@
 
     <!-- Contenido Principal -->
     <main class="max-w-2xl mx-auto px-4 py-8 space-y-6">
-        
+
         <div class="text-center space-y-2">
             <h1 class="text-3xl font-bold text-slate-900">Nueva Grabación</h1>
             <p class="text-slate-500">Selecciona la asignatura y comienza a grabar sin límites.</p>
         </div>
 
         <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6">
-            
+
             <!-- Selector de Asignatura Negro -->
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-2">Asignatura</label>
                 <div class="relative">
-                    <select id="subjectSelect" class="w-full p-4 rounded-lg border border-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none font-medium text-lg shadow-sm">
+                    <select id="subjectSelect"
+                        class="w-full p-4 rounded-lg border border-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none font-medium text-lg shadow-sm">
                         <option value="">Seleccionar asignatura...</option>
                         <option value="Matemáticas">Matemáticas</option>
                         <option value="Física y Química">Física y Química</option>
@@ -73,18 +92,29 @@
                         <option value="Project">Project</option>
                         <option value="Inglés">Inglés</option>
                         <option value="Educación Física">Educación Física</option>
+                        <option value="Tecnología y Digitalización">Tecnología y Digitalización</option>
+                        <option value="Otros">Otros</option>
                     </select>
                 </div>
             </div>
 
-            <!-- Botón de Grabación -->
+            <!-- Botón de Grabación y Visualizador -->
             <div class="flex flex-col items-center justify-center py-6 space-y-4">
-                <div id="recordBtnContainer" class="relative flex items-center justify-center w-36 h-36 rounded-full bg-slate-50 transition-all duration-300 cursor-pointer hover:bg-slate-100">
-                    <div id="pulseRing" class="absolute w-full h-full rounded-full bg-red-400 opacity-20 hidden"></div>
-                    <button id="toggleRecordBtn" class="relative z-10 w-28 h-28 rounded-full bg-black text-white shadow-xl flex items-center justify-center transition-all hover:scale-105 border-4 border-slate-100">
+                <div id="recordContainer" class="relative flex items-center justify-center w-48 h-48">
+                    <!-- Visualizador Canvas (detrás del botón) -->
+                    <canvas id="visualizer" width="200" height="200"
+                        class="absolute top-0 left-0 w-full h-full z-0 opacity-0 transition-opacity duration-300"></canvas>
+
+                    <!-- Anillo de pulso (fallback/decoración) -->
+                    <div id="pulseRing" class="absolute w-36 h-36 rounded-full bg-red-400 opacity-20 hidden z-0"></div>
+
+                    <!-- Botón Principal -->
+                    <button id="toggleRecordBtn"
+                        class="relative z-10 w-28 h-28 rounded-full bg-black text-white shadow-xl flex items-center justify-center transition-all hover:scale-105 border-4 border-slate-100">
                         <i id="micIcon" class="fas fa-microphone text-4xl"></i>
                     </button>
                 </div>
+
                 <div class="text-center">
                     <p id="statusText" class="text-xl font-medium text-slate-500">Toca para grabar</p>
                     <p id="timeText" class="text-base text-slate-400 mt-1 font-mono opacity-0">00:00:00</p>
@@ -98,31 +128,73 @@
                     <span class="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded font-bold">LIVE</span>
                 </h3>
                 <div class="relative overflow-hidden h-24">
-                     <!-- Gradiente superior para efecto de desvanecimiento -->
-                    <div class="absolute top-0 left-0 w-full h-8 bg-gradient-to-b from-slate-50 to-transparent z-10"></div>
-                    
-                    <p id="transcriptText" class="text-slate-600 text-sm leading-relaxed italic break-words absolute bottom-0 w-full">
+                    <!-- Gradiente superior para efecto de desvanecimiento -->
+                    <div class="absolute top-0 left-0 w-full h-8 bg-gradient-to-b from-slate-50 to-transparent z-10">
+                    </div>
+
+                    <p id="transcriptText"
+                        class="text-slate-600 text-sm leading-relaxed italic break-words absolute bottom-0 w-full">
                         ...esperando audio...
                     </p>
                 </div>
-                <p class="text-[10px] text-slate-400 text-center mt-2">Se muestran solo las últimas palabras. Todo se está grabando.</p>
+                <p class="text-[10px] text-slate-400 text-center mt-2">Se muestran solo las últimas palabras. Todo se
+                    está grabando.</p>
             </div>
 
             <!-- Botón Parar y Procesar -->
-            <button id="processBtn" disabled class="w-full py-4 bg-slate-200 text-slate-400 rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow-sm">
+            <button id="processBtn" disabled
+                class="w-full py-4 bg-slate-200 text-slate-400 rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow-sm">
                 <i class="fas fa-stop-circle"></i>
                 <span>Parar y Procesar Clase</span>
             </button>
-            
+
             <!-- Loader -->
             <div id="loader" class="hidden text-center py-8 bg-indigo-50 rounded-lg border border-indigo-100">
                 <i class="fas fa-circle-notch fa-spin text-indigo-600 text-4xl mb-4"></i>
                 <h3 class="text-lg font-bold text-indigo-900">Procesando con IA...</h3>
-                <p class="text-sm text-indigo-700 mt-2 px-4">Estamos analizando toda la grabación para generar resumen, quiz y flashcards.</p>
+                <p class="text-sm text-indigo-700 mt-2 px-4">Estamos analizando toda la grabación para generar resumen,
+                    quiz y flashcards.</p>
             </div>
 
         </div>
     </main>
+
+    <!-- FULL SCREEN RECORDING OVERLAY -->
+    <div id="fullScreenOverlay"
+        class="fixed inset-0 bg-black z-[100] hidden flex-col items-center justify-center p-8 transition-opacity duration-500">
+        <!-- Header -->
+        <div class="absolute top-8 w-full max-w-4xl flex justify-between items-center px-4">
+            <div class="flex items-center gap-3">
+                <div class="w-3 h-3 rounded-full bg-red-500 animate-pulse"></div>
+                <span class="text-red-500 font-bold tracking-widest text-sm">GRABANDO</span>
+                <span id="overlayTimeText" class="text-slate-400 font-mono text-sm ml-2">00:00:00</span>
+            </div>
+            <div class="flex items-center gap-2 text-slate-600 text-xs uppercase font-bold tracking-widest">
+                <i class="fas fa-shield-alt"></i> Anti-Exit & WakeLock Mod
+            </div>
+        </div>
+
+        <!-- Central Transcript -->
+        <div class="flex-grow flex items-center justify-center w-full max-w-5xl overflow-hidden relative">
+            <!-- Gradientes para desvanecer -->
+            <div class="absolute top-0 w-full h-20 bg-gradient-to-b from-black to-transparent z-10"></div>
+            <div class="absolute bottom-0 w-full h-20 bg-gradient-to-t from-black to-transparent z-10"></div>
+
+            <p id="overlayTranscript"
+                class="text-3xl md:text-4xl leading-relaxed text-slate-200 font-medium text-center h-[60vh] overflow-hidden flex flex-col justify-end pb-10 transition-all">
+                Esperando voz...
+            </p>
+        </div>
+
+        <!-- Button to Stop -->
+        <button id="overlayStopBtn"
+            class="mb-12 group flex items-center gap-4 bg-slate-900 border border-slate-700 hover:bg-red-900/30 hover:border-red-500/50 text-slate-300 hover:text-red-400 px-8 py-4 rounded-full transition-all duration-300">
+            <div class="w-12 h-12 rounded-full border-2 border-current flex items-center justify-center">
+                <i class="fas fa-stop text-xl"></i>
+            </div>
+            <span class="text-lg font-medium">Finalizar Grabación</span>
+        </button>
+    </div>
 
     <!-- Scripts -->
     <script type="module">
@@ -152,12 +224,35 @@
         const processBtn = document.getElementById('processBtn');
         const loader = document.getElementById('loader');
 
+        // Overlay Elements
+        const overlay = document.getElementById('fullScreenOverlay');
+        const overlayTranscript = document.getElementById('overlayTranscript');
+        const overlayTimeText = document.getElementById('overlayTimeText');
+        const overlayStopBtn = document.getElementById('overlayStopBtn');
+
+        overlayStopBtn.onclick = () => {
+            // Simulamos click en el botón principal para detener
+            toggleBtn.click();
+        };
+
         // State Variables
         let isRecording = false;
-        let fullTranscript = ''; // Guarda TODO el texto (+40 mins)
+        let fullTranscript = '';
+        let committedTranscript = '';
         let recognition = null;
         let startTime = null;
         let timerInterval = null;
+        let wakeLock = null; // Variable para Wake Lock API
+        let recognitionActive = false; // Estado real del motor de reconocimiento
+        let watchdogTimer = null; // Timer para revivir el reconocimiento
+
+        // Audio Visualizer Variables
+        let audioContext = null;
+        let analyser = null;
+        let microphone = null;
+        let canvas = document.getElementById('visualizer');
+        let canvasCtx = canvas.getContext('2d');
+        let visualizerFrame = null;
 
         // --- SPEECH RECOGNITION SETUP ---
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -167,16 +262,28 @@
             recognition.interimResults = true;
             recognition.lang = 'es-ES';
 
+            recognition.onstart = () => {
+                console.log("Speech Recognition: ACTIVO");
+                recognitionActive = true;
+            };
+
             recognition.onresult = (event) => {
+                let currentSessionFinal = '';
                 let interimTranscript = '';
-                for (let i = event.resultIndex; i < event.results.length; ++i) {
+
+                // Recalculamos todo el texto de la sesión actual para evitar duplicados
+                for (let i = 0; i < event.results.length; ++i) {
+                    const txt = event.results[i][0].transcript.trim(); // Limpiamos espacios basura
                     if (event.results[i].isFinal) {
-                        fullTranscript += event.results[i][0].transcript + ' ';
+                        currentSessionFinal += txt + ' ';
                     } else {
-                        interimTranscript += event.results[i][0].transcript;
+                        interimTranscript += txt + ' ';
                     }
                 }
-                
+
+                // Actualizamos el transcript completo con lo confirmado previamente + lo nuevo de esta sesión
+                fullTranscript = committedTranscript + currentSessionFinal;
+
                 // --- LÓGICA DE VISUALIZACIÓN LIMITADA (300 CHARS) ---
                 const combinedText = fullTranscript + interimTranscript;
                 if (combinedText.length > 300) {
@@ -184,27 +291,98 @@
                 } else {
                     transcriptDisplay.innerText = combinedText || "...escuchando...";
                 }
-                
+
+                // Overlay Update (Efecto Tipo Máquina de Escribir)
+                if (combinedText) {
+                    // Solo animamos la parte NUEVA de la transcripción
+                    let currentDisplayed = overlayTranscript.dataset.fullText || "";
+
+                    // Si hubo un reset/corrección mayor y el texto es más corto, reseteamos visualmente
+                    if (combinedText.length < currentDisplayed.length) {
+                        overlayTranscript.innerText = combinedText;
+                        overlayTranscript.dataset.fullText = combinedText;
+                        currentDisplayed = combinedText;
+                    }
+
+                    if (combinedText.length > currentDisplayed.length) {
+                        // Hay nuevo texto
+                        let newPart = combinedText.substring(currentDisplayed.length);
+
+                        // HEURÍSTICA: Si falta espacio visualmente entre palabras, lo forzamos
+                        // (Por si el tracking se desfasó o el audio vino pegado)
+                        const lastChar = overlayTranscript.innerText.slice(-1);
+                        if (overlayTranscript.innerText.length > 0 && lastChar !== ' ' && lastChar !== '\n' && newPart[0] !== ' ') {
+                            newPart = ' ' + newPart;
+                            // Actualizamos el dataset para incluir este espacio extra y no perder sync
+                            currentDisplayed += ' ';
+                            overlayTranscript.dataset.fullText = currentDisplayed;
+                        }
+
+                        typeWriterEffect(newPart);
+                        overlayTranscript.dataset.fullText += newPart;
+                    }
+                }
+
                 updateProcessButton();
             };
 
+            // Función recursiva para efecto máquina de escribir
+            function typeWriterEffect(text) {
+                if (!text) return;
+                let i = 0;
+                const speed = 30; // ms por letra
+
+                function type() {
+                    if (i < text.length) {
+                        // Si el texto es muy largo, recortamos el inicio visualmente (scrolling)
+                        if (overlayTranscript.innerText.length > 800) {
+                            overlayTranscript.innerText = "..." + overlayTranscript.innerText.slice(-800);
+                        }
+
+                        overlayTranscript.innerText += text.charAt(i);
+                        i++;
+                        setTimeout(type, speed);
+                    }
+                }
+                type();
+            }
+
             // --- LÓGICA DE GRABACIÓN INFINITA ---
             // Si el navegador corta la grabación por silencio o tiempo, la reiniciamos inmediatamente
+            // --- LÓGICA DE GRABACIÓN INFINITA MEJORADA ---
             recognition.onend = () => {
+                console.log("Speech Recognition: END (Se detuvo el motor)");
+                recognitionActive = false;
+
+                // Si seguimos 'grabando' (usuario no ha dado click a Parar), reiniciamos
                 if (isRecording) {
-                    console.log("Reiniciando microfono para grabación continua...");
-                    try { 
-                        recognition.start(); 
-                    } catch (e) { 
-                        console.log("Error al reiniciar inmediato, esperando 1s...");
-                        setTimeout(() => { if(isRecording) recognition.start(); }, 1000);
-                    }
+                    committedTranscript = fullTranscript;
+                    // El Watchdog se encargará de revivirlo si onend no lo hace rápido,
+                    // pero intentamos reinicio inmediato:
+                    try { recognition.start(); } catch (e) { }
                 }
             };
 
             recognition.onerror = (event) => {
-                console.error("Error Speech:", event.error);
-                // Si hay error de red o 'no-speech', el onend se encargará de reiniciar
+                console.warn("Speech Error:", event.error);
+                recognitionActive = false; // Asumimos que paró si hubo error
+
+                if (event.error === 'no-speech') {
+                    return; // Ignoramos silencios
+                }
+
+                // CRÍTICO: No paramos en error de red, dejamos que el Watchdog reintente
+                if (event.error === 'network') {
+                    console.log("Error de red detectado. Reintentando...");
+                    return;
+                }
+
+                // Solo paramos fatalmente si es permiso denegado o hardware
+                if (event.error === 'not-allowed' || event.error === 'audio-capture') {
+                    isRecording = false;
+                    stopRecordingSession();
+                    alert("Error crítico de micrófono: " + event.error);
+                }
             };
         } else {
             alert("Tu navegador no soporta reconocimiento de voz. Por favor usa Google Chrome.");
@@ -219,7 +397,9 @@
                 const hours = Math.floor(diff / 3600000).toString().padStart(2, '0');
                 const minutes = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
                 const seconds = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
-                timeText.innerText = `${hours}:${minutes}:${seconds}`;
+                const timeStr = `${hours}:${minutes}:${seconds}`;
+                timeText.innerText = timeStr;
+                overlayTimeText.innerText = timeStr;
             }, 1000);
         }
 
@@ -242,46 +422,182 @@
             }
         });
 
-        function startRecordingSession() {
-            isRecording = true;
-            fullTranscript = ''; 
-            transcriptDisplay.innerText = 'Iniciando...';
-            
-            // UI Visuals
-            toggleBtn.classList.remove('bg-black', 'border-slate-100');
-            toggleBtn.classList.add('bg-red-600', 'border-red-200', 'animate-pulse');
-            micIcon.classList.remove('fa-microphone');
-            micIcon.classList.add('fa-stop');
-            
-            pulseRing.classList.remove('hidden');
-            pulseRing.classList.add('recording-pulse');
-            
-            statusText.innerText = "GRABANDO";
-            statusText.classList.add('text-red-600', 'font-bold');
-            
-            startTimer();
+        async function startRecordingSession() {
+            try {
+                // 1. Iniciar reconocimiento de voz
+                recognition.start();
 
-            try { recognition.start(); } catch(e) { console.log(e); }
+                // 2. Iniciar Visualizador de Audio
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                setupVisualizer(stream);
+
+                isRecording = true;
+                fullTranscript = '';
+                committedTranscript = '';
+                transcriptDisplay.innerText = 'Escuchando...';
+
+                // UI Visuals
+                toggleBtn.classList.remove('bg-black', 'border-slate-100');
+                toggleBtn.classList.add('bg-red-600', 'border-red-200');
+                micIcon.classList.remove('fa-microphone');
+                micIcon.classList.add('fa-stop');
+
+                canvas.classList.remove('opacity-0');
+                pulseRing.classList.add('hidden'); // Usamos canvas ahora
+
+                statusText.innerText = "GRABANDO";
+                statusText.classList.add('text-red-600', 'font-bold');
+
+                // ACTIVAR MODO CINE / OSCURO
+                overlay.classList.remove('hidden');
+                overlay.classList.add('flex');
+
+                // Limpiar texto inicial para que no se pegue "Esperando voz...hola"
+                overlayTranscript.innerText = "";
+                overlayTranscript.dataset.fullText = "";
+
+                // ACTIVAR PROTECCIONES
+                enableWakeLock();
+                window.onbeforeunload = (e) => {
+                    e.preventDefault();
+                    e.returnValue = ''; // Standard anti-exit msg
+                };
+
+                // PONIENDO AL perro guardián (WATCHDOG)
+                // Chequea cada 2s si el motor murió y lo revive
+                if (watchdogTimer) clearInterval(watchdogTimer);
+                watchdogTimer = setInterval(() => {
+                    if (isRecording && !recognitionActive) {
+                        console.log("WATCHDOG: El reconocimiento murió. Reviviéndolo...");
+                        try { recognition.start(); } catch (e) { }
+                    }
+                }, 2000);
+
+                startTimer();
+                updateProcessButton();
+
+            } catch (e) {
+                console.error("Error al iniciar grabación:", e);
+                alert("No se pudo acceder al micrófono. Verifica los permisos.");
+            }
         }
 
         function stopRecordingSession() {
-            isRecording = false; // Esto detiene el bucle infinito en onend
+            isRecording = false;
             stopTimer();
-            
+
+            // Detener reconocimiento
+            try { recognition.stop(); } catch (e) { }
+
+            // Detener Visualizador y Streams
+            if (visualizerFrame) cancelAnimationFrame(visualizerFrame);
+            if (audioContext) audioContext.close();
+            audioContext = null;
+            canvas.classList.add('opacity-0');
+
+            // Limpiar canvas
+            canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+
             // UI Visuals
             toggleBtn.classList.add('bg-black', 'border-slate-100');
-            toggleBtn.classList.remove('bg-red-600', 'border-red-200', 'animate-pulse');
+            toggleBtn.classList.remove('bg-red-600', 'border-red-200');
             micIcon.classList.add('fa-microphone');
             micIcon.classList.remove('fa-stop');
-            
-            pulseRing.classList.add('hidden');
-            pulseRing.classList.remove('recording-pulse');
-            
+
             statusText.innerText = "Grabación detenida";
             statusText.classList.remove('text-red-600', 'font-bold');
 
-            try { recognition.stop(); } catch(e) { console.log(e); }
+            // DESACTIVAR MODO CINE
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex');
+
+            // DESACTIVAR PROTECCIONES
+            if (wakeLock) wakeLock.release().then(() => wakeLock = null);
+            window.onbeforeunload = null;
+
+            // Desactivar Watchdog
+            if (watchdogTimer) clearInterval(watchdogTimer);
+            watchdogTimer = null;
+            recognitionActive = false;
+
             updateProcessButton();
+        }
+
+        // --- WAKE LOCK API ---
+        async function enableWakeLock() {
+            if ('wakeLock' in navigator) {
+                try {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Wake Lock isActive');
+
+                    // Re-adquirir si se pierde visibilidad
+                    document.addEventListener('visibilitychange', async () => {
+                        if (wakeLock !== null && document.visibilityState === 'visible') {
+                            wakeLock = await navigator.wakeLock.request('screen');
+                            console.log('Wake Lock Re-acquired');
+                        }
+                    });
+
+                } catch (err) {
+                    console.error(`${err.name}, ${err.message}`);
+                }
+            }
+        }
+
+        // --- SISTEMA DE VISUALIZACIÓN DE AUDIO ---
+        function setupVisualizer(stream) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            microphone = audioContext.createMediaStreamSource(stream);
+            microphone.connect(analyser);
+
+            analyser.fftSize = 64; // Menos barras, más gruesas
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = 60; // Radio del circulo base (alrededor del botón)
+
+            function draw() {
+                visualizerFrame = requestAnimationFrame(draw);
+                analyser.getByteFrequencyData(dataArray);
+
+                canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Dibujar barras radiales
+                const bars = 24; // Número de barras
+                const step = (Math.PI * 2) / bars;
+
+                for (let i = 0; i < bars; i++) {
+                    // Mapeamos el valor de frecuencia a una altura
+                    // Usamos un rango medio de frecucencias para mejor visual
+                    const value = dataArray[i] || 0;
+                    const barHeight = (value / 255) * 40; // Altura máxima 40px
+
+                    const angle = i * step;
+
+                    // Coordenadas inicio (en el borde del botón)
+                    const x1 = centerX + Math.cos(angle) * (radius + 5);
+                    const y1 = centerY + Math.sin(angle) * (radius + 5);
+
+                    // Coordenadas fin (hacia afuera)
+                    const x2 = centerX + Math.cos(angle) * (radius + 5 + barHeight);
+                    const y2 = centerY + Math.sin(angle) * (radius + 5 + barHeight);
+
+                    canvasCtx.beginPath();
+                    canvasCtx.moveTo(x1, y1);
+                    canvasCtx.lineTo(x2, y2);
+                    canvasCtx.lineWidth = 6;
+                    canvasCtx.lineCap = 'round';
+
+                    // Color dinámico según amplitud
+                    const hue = 0 + (value / 255) * 60; // Rojo a Amarillo/Naranja
+                    canvasCtx.strokeStyle = `hsla(${hue}, 100%, 50%, 0.8)`;
+                    canvasCtx.stroke();
+                }
+            }
+            draw();
         }
 
         function updateProcessButton() {
@@ -297,83 +613,45 @@
             }
         }
 
-        // --- PROCESAMIENTO CON IA ---
+        // --- GUARDADO SIMPLE (SIN AI) ---
         processBtn.addEventListener('click', async () => {
             if (!fullTranscript) return;
 
             processBtn.classList.add('hidden');
             loader.classList.remove('hidden');
-            
-            const subject = subjectSelect.value;
-            // Recortar para la IA si excede límites seguros, pero guardar todo en DB
-            const contextForAI = fullTranscript.substring(0, 20000); 
+            loader.querySelector('h3').innerText = "Guardando grabación...";
+            loader.querySelector('p').innerText = "Subiendo audio transcrito a la nube...";
 
-            const prompt = `
-                Actúa como un profesor experto de ${subject}.
-                Analiza la siguiente transcripción de clase. Puede haber errores de reconocimiento de voz, interprétalos por contexto.
-                Genera un JSON válido con esta estructura exacta:
-                {
-                  "summary": "Resumen completo y estructurado de la clase (aprox 200 palabras)",
-                  "keyPoints": ["Punto clave 1", "Punto clave 2", "Punto clave 3", "Punto clave 4", "Punto clave 5"],
-                  "flashcards": [
-                    {"front": "Pregunta conceptual 1", "back": "Respuesta breve"}, 
-                    {"front": "Pregunta conceptual 2", "back": "Respuesta breve"},
-                    {"front": "Pregunta conceptual 3", "back": "Respuesta breve"},
-                    {"front": "Pregunta conceptual 4", "back": "Respuesta breve"},
-                    {"front": "Pregunta conceptual 5", "back": "Respuesta breve"}
-                   ],
-                  "quiz": [
-                    {"question": "Pregunta 1", "options": ["A", "B", "C", "D"], "correctAnswer": 0},
-                    {"question": "Pregunta 2", "options": ["A", "B", "C", "D"], "correctAnswer": 1},
-                    {"question": "Pregunta 3", "options": ["A", "B", "C", "D"], "correctAnswer": 2}
-                   ]
-                }
-                
-                Transcripción: "${contextForAI}"
-            `;
+            const subject = subjectSelect.value;
+            // Guardamos el texto completo original
+            // Nota: fullTranscript ya contiene todo lo necesario gracias al fix anterior
 
             try {
-                const response = await fetch(API_ENDPOINT, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${MISTRAL_API_KEY}`
-                    },
-                    body: JSON.stringify({
-                        model: "mistral-medium",
-                        messages: [{ role: "user", content: prompt }],
-                        response_format: { type: "json_object" }
-                    })
-                });
-
-                if (!response.ok) throw new Error("Error en API Mistral: " + response.statusText);
-
-                const data = await response.json();
-                const aiContent = JSON.parse(data.choices[0].message.content);
-
                 // --- GUARDAR EN FIREBASE ---
                 const notesRef = ref(db, 'public_notes');
                 const newNoteRef = push(notesRef);
                 await set(newNoteRef, {
                     subject: subject,
-                    transcript: fullTranscript, // Guardamos el texto completo original
-                    summary: aiContent.summary,
-                    keyPoints: aiContent.keyPoints,
-                    flashcards: aiContent.flashcards,
-                    quiz: aiContent.quiz,
-                    timestamp: Date.now()
+                    transcript: fullTranscript,
+                    timestamp: Date.now(),
+                    // Inicializamos campos vacíos para que ver_resumenes sepa que debe generarlos
+                    summary: null,
+                    keyPoints: null,
+                    flashcards: null,
+                    quiz: null
                 });
 
-                alert("¡Clase guardada exitosamente!");
+                alert("¡Grabación guardada! Ve a 'Ver Resúmenes' para generar el contenido con IA.");
                 window.location.href = "ver_resumenes.html";
 
             } catch (error) {
                 console.error(error);
-                alert("Ocurrió un error al procesar la clase: " + error.message);
+                alert("Ocurrió un error al guardar: " + error.message);
                 loader.classList.add('hidden');
                 processBtn.classList.remove('hidden');
             }
         });
     </script>
 </body>
+
 </html>
