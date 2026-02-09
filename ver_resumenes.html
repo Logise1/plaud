@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Clases - Plaud</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen font-sans">
+
+    <!-- Navegación -->
+    <nav class="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2 text-indigo-600 font-bold text-xl cursor-pointer" onclick="showDashboard()">
+                <i class="fas fa-book-reader"></i>
+                <span>Plaud<span class="text-slate-800">Viewer</span></span>
+            </div>
+            <a href="grabar.html" class="bg-black text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors">
+                <i class="fas fa-plus mr-1"></i> Nueva Grabación
+            </a>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        
+        <!-- VISTA: LISTA DE NOTAS -->
+        <div id="dashboardView">
+            <h2 class="text-2xl font-bold text-slate-800 mb-6">Biblioteca de Clases</h2>
+            
+            <div id="notesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Loader inicial -->
+                <div class="col-span-full text-center py-20 text-slate-400">
+                    <i class="fas fa-circle-notch fa-spin text-4xl mb-4 text-indigo-500"></i>
+                    <p>Cargando tus notas desde la nube...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA: DETALLE DE NOTA -->
+        <div id="detailView" class="hidden space-y-6">
+            <button onclick="showDashboard()" class="text-slate-500 hover:text-indigo-600 text-sm font-medium flex items-center gap-2 group">
+                <i class="fas fa-arrow-left group-hover:-translate-x-1 transition-transform"></i> Volver a la biblioteca
+            </button>
+
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-200 pb-4 gap-4">
+                <div>
+                    <h1 id="detailSubject" class="text-3xl font-bold text-slate-900">Asignatura</h1>
+                    <p id="detailDate" class="text-slate-500 text-sm font-mono mt-1">Fecha</p>
+                </div>
+                <div class="flex bg-slate-100 p-1 rounded-lg">
+                    <button onclick="switchTab('summary')" id="btn-summary" class="tab-btn px-4 py-2 rounded-md text-sm font-medium transition-all">Resumen</button>
+                    <button onclick="switchTab('flashcards')" id="btn-flashcards" class="tab-btn px-4 py-2 rounded-md text-sm font-medium transition-all text-slate-500 hover:text-slate-700">Flashcards</button>
+                    <button onclick="switchTab('quiz')" id="btn-quiz" class="tab-btn px-4 py-2 rounded-md text-sm font-medium transition-all text-slate-500 hover:text-slate-700">Quiz</button>
+                </div>
+            </div>
+
+            <!-- CONTENIDO TABS -->
+            <div id="tabContent" class="min-h-[400px]">
+                
+                <!-- TAB: RESUMEN -->
+                <div id="summaryTab" class="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in">
+                    <div class="md:col-span-2 space-y-6">
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                            <h3 class="font-bold text-lg mb-4 text-slate-900 flex items-center gap-2">
+                                <i class="fas fa-align-left text-indigo-500"></i> Resumen
+                            </h3>
+                            <p id="summaryText" class="text-slate-700 leading-relaxed whitespace-pre-line"></p>
+                        </div>
+                        <div class="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                             <h3 class="font-bold text-sm mb-2 text-slate-500 uppercase">Transcripción Original</h3>
+                             <div id="transcriptText" class="text-xs text-slate-500 max-h-40 overflow-y-auto italic p-2 bg-white rounded border border-slate-200"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <div class="bg-indigo-50 p-6 rounded-xl border border-indigo-100">
+                            <h3 class="font-bold text-lg mb-4 text-indigo-900 flex items-center gap-2">
+                                <i class="fas fa-lightbulb text-indigo-500"></i> Puntos Clave
+                            </h3>
+                            <ul id="keyPointsList" class="space-y-3 text-sm text-indigo-900"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: FLASHCARDS -->
+                <div id="flashcardsTab" class="hidden flex flex-col items-center py-8">
+                    <div class="w-full max-w-lg h-72 perspective-1000 cursor-pointer group mb-8" onclick="flipCard()">
+                        <div id="flashcardInner" class="relative w-full h-full transition-transform duration-500 transform-style-3d shadow-xl rounded-2xl">
+                            <!-- Front -->
+                            <div class="absolute w-full h-full backface-hidden bg-white border border-slate-200 rounded-2xl flex flex-col items-center justify-center p-8 text-center">
+                                <div class="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center mb-4 text-indigo-500">
+                                    <i class="fas fa-question text-xl"></i>
+                                </div>
+                                <span class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Pregunta</span>
+                                <p id="cardFront" class="text-xl font-medium text-slate-800 leading-snug">¿?</p>
+                                <p class="absolute bottom-4 text-xs text-slate-400">Clic para voltear</p>
+                            </div>
+                            <!-- Back -->
+                            <div class="absolute w-full h-full backface-hidden bg-gradient-to-br from-indigo-600 to-purple-700 text-white rounded-2xl flex flex-col items-center justify-center p-8 text-center rotate-y-180">
+                                <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-4 text-white">
+                                    <i class="fas fa-check text-xl"></i>
+                                </div>
+                                <span class="text-xs font-bold text-indigo-200 uppercase tracking-widest mb-2">Respuesta</span>
+                                <p id="cardBack" class="text-xl font-medium leading-snug">Respuesta</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-6">
+                        <button onclick="prevCard()" class="p-4 bg-white border border-slate-200 rounded-full hover:bg-slate-50 shadow-sm text-slate-600 hover:text-indigo-600 transition-all">
+                            <i class="fas fa-chevron-left text-xl"></i>
+                        </button>
+                        <span id="cardCounter" class="font-mono text-slate-400 font-medium">1 / 5</span>
+                        <button onclick="nextCard()" class="p-4 bg-white border border-slate-200 rounded-full hover:bg-slate-50 shadow-sm text-slate-600 hover:text-indigo-600 transition-all">
+                            <i class="fas fa-chevron-right text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TAB: QUIZ -->
+                <div id="quizTab" class="hidden max-w-2xl mx-auto">
+                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+                        <!-- Header Quiz -->
+                        <div class="flex justify-between items-center mb-8 pb-4 border-b border-slate-100">
+                            <span id="quizProgress" class="text-sm font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">Pregunta 1</span>
+                            <span id="quizScore" class="text-sm font-medium text-slate-500">Puntos: 0</span>
+                        </div>
+                        
+                        <!-- Pregunta -->
+                        <h3 id="quizQuestion" class="text-xl font-bold text-slate-900 mb-6 leading-relaxed">Pregunta</h3>
+                        
+                        <!-- Opciones -->
+                        <div id="quizOptions" class="space-y-3"></div>
+                        
+                        <!-- Resultado Final -->
+                        <div id="quizResult" class="hidden text-center py-8">
+                            <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 text-green-600 mb-4">
+                                <i class="fas fa-trophy text-3xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-slate-900 mb-2">¡Quiz Completado!</h3>
+                            <p id="finalScoreText" class="text-slate-600 mb-6">Obtuviste X puntos</p>
+                            <button onclick="resetQuiz()" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors">
+                                Reiniciar Quiz
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Scripts -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+
+        const firebaseConfig = {
+            databaseURL: "https://chatpro-23332-default-rtdb.asia-southeast1.firebasedatabase.app/"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Variables Globales
+        let allNotes = [];
+        let currentNote = null;
+        let currentCardIndex = 0;
+        let currentQuizIndex = 0;
+        let quizScore = 0;
+
+        // --- CARGAR DATOS ---
+        const notesRef = ref(db, 'public_notes');
+        onValue(notesRef, (snapshot) => {
+            const data = snapshot.val();
+            const grid = document.getElementById('notesGrid');
+            grid.innerHTML = '';
+
+            if (!data) {
+                grid.innerHTML = '<div class="col-span-full text-center text-slate-500 bg-white p-8 rounded-xl border border-slate-200">No hay notas guardadas aún. Ve a "Nueva Grabación" para empezar.</div>';
+                return;
+            }
+
+            allNotes = Object.entries(data).map(([key, value]) => ({ id: key, ...value })).reverse();
+
+            allNotes.forEach(note => {
+                const date = new Date(note.timestamp).toLocaleDateString() + ' ' + new Date(note.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const summaryPreview = note.summary ? note.summary.substring(0, 100) + "..." : "Sin resumen disponible.";
+                
+                const card = document.createElement('div');
+                card.className = "bg-white p-5 rounded-xl shadow-sm border border-slate-200 hover:shadow-lg hover:border-indigo-300 transition-all cursor-pointer group flex flex-col h-full";
+                card.onclick = () => openNote(note);
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="bg-black text-white text-xs font-bold px-2 py-1 rounded uppercase tracking-wide">${note.subject}</span>
+                    </div>
+                    <h3 class="font-bold text-slate-800 mb-2 line-clamp-2 text-lg group-hover:text-indigo-600 transition-colors">${summaryPreview}</h3>
+                    <p class="text-slate-500 text-sm mb-4 line-clamp-3 flex-grow">${note.transcript ? note.transcript.substring(0,80) : ''}...</p>
+                    
+                    <div class="pt-4 border-t border-slate-100 flex justify-between items-center text-xs text-slate-400">
+                        <span class="font-mono">${date}</span>
+                        <div class="flex gap-2">
+                             ${note.flashcards ? `<span class="bg-indigo-50 text-indigo-600 px-2 py-1 rounded flex items-center gap-1"><i class="fas fa-bolt"></i> ${note.flashcards.length}</span>` : ''}
+                             ${note.quiz ? `<span class="bg-green-50 text-green-600 px-2 py-1 rounded flex items-center gap-1"><i class="fas fa-question"></i> ${note.quiz.length}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        });
+
+        // --- NAVEGACIÓN Y VISTAS ---
+        window.showDashboard = () => {
+            document.getElementById('dashboardView').classList.remove('hidden');
+            document.getElementById('detailView').classList.add('hidden');
+        };
+
+        window.openNote = (note) => {
+            currentNote = note;
+            document.getElementById('dashboardView').classList.add('hidden');
+            document.getElementById('detailView').classList.remove('hidden');
+            
+            // Llenar datos básicos
+            document.getElementById('detailSubject').innerText = note.subject;
+            document.getElementById('detailDate').innerText = new Date(note.timestamp).toLocaleString();
+            
+            // Resetear tabs
+            switchTab('summary');
+        };
+
+        window.switchTab = (tabName) => {
+            // Estilos Botones
+            const activeClass = "bg-white text-indigo-600 shadow-sm".split(" ");
+            const inactiveClass = "text-slate-500 hover:text-slate-700".split(" ");
+            
+            ['summary', 'flashcards', 'quiz'].forEach(t => {
+                const btn = document.getElementById(`btn-${t}`);
+                if (t === tabName) {
+                    btn.classList.remove(...inactiveClass);
+                    btn.classList.add(...activeClass);
+                } else {
+                    btn.classList.remove(...activeClass);
+                    btn.classList.add(...inactiveClass);
+                }
+            });
+
+            // Visibilidad Contenido
+            document.getElementById('summaryTab').classList.add('hidden');
+            document.getElementById('flashcardsTab').classList.add('hidden');
+            document.getElementById('quizTab').classList.add('hidden');
+
+            if (tabName === 'summary') {
+                document.getElementById('summaryTab').classList.remove('hidden');
+                loadSummary();
+            } else if (tabName === 'flashcards') {
+                document.getElementById('flashcardsTab').classList.remove('hidden');
+                document.getElementById('flashcardsTab').classList.add('flex');
+                loadFlashcards();
+            } else if (tabName === 'quiz') {
+                document.getElementById('quizTab').classList.remove('hidden');
+                resetQuiz();
+            }
+        };
+
+        // --- LÓGICA DE TABS ---
+        function loadSummary() {
+            document.getElementById('summaryText').innerText = currentNote.summary || "No hay resumen disponible.";
+            document.getElementById('transcriptText').innerText = currentNote.transcript || "Transcripción no disponible.";
+            
+            const ul = document.getElementById('keyPointsList');
+            ul.innerHTML = '';
+            if (currentNote.keyPoints) {
+                currentNote.keyPoints.forEach(p => {
+                    const li = document.createElement('li');
+                    li.className = "flex gap-3 items-start p-2 rounded hover:bg-white transition-colors";
+                    li.innerHTML = `<i class="fas fa-check-circle text-indigo-500 mt-1 shrink-0"></i> <span>${p}</span>`;
+                    ul.appendChild(li);
+                });
+            } else {
+                ul.innerHTML = '<li class="text-slate-400 italic">No se generaron puntos clave.</li>';
+            }
+        }
+
+        // --- FLASHCARDS LOGIC ---
+        function loadFlashcards() {
+            currentCardIndex = 0;
+            updateCardDisplay();
+        }
+
+        window.updateCardDisplay = () => {
+            const cards = currentNote.flashcards || [];
+            if (cards.length === 0) {
+                document.getElementById('cardFront').innerText = "No hay flashcards";
+                document.getElementById('cardBack').innerText = "...";
+                return;
+            }
+            
+            const card = cards[currentCardIndex];
+            document.getElementById('cardFront').innerText = card.front;
+            document.getElementById('cardBack').innerText = card.back;
+            document.getElementById('cardCounter').innerText = `${currentCardIndex + 1} / ${cards.length}`;
+            
+            // Asegurar que muestra el frente al cambiar
+            document.getElementById('flashcardInner').classList.remove('rotate-y-180');
+        };
+
+        window.flipCard = () => {
+            document.getElementById('flashcardInner').classList.toggle('rotate-y-180');
+        };
+
+        window.nextCard = () => {
+            if (!currentNote.flashcards) return;
+            currentCardIndex = (currentCardIndex + 1) % currentNote.flashcards.length;
+            updateCardDisplay();
+        };
+
+        window.prevCard = () => {
+            if (!currentNote.flashcards) return;
+            currentCardIndex = (currentCardIndex - 1 + currentNote.flashcards.length) % currentNote.flashcards.length;
+            updateCardDisplay();
+        };
+
+        // --- QUIZ LOGIC ---
+        window.resetQuiz = () => {
+            currentQuizIndex = 0;
+            quizScore = 0;
+            document.getElementById('quizOptions').classList.remove('hidden');
+            document.getElementById('quizResult').classList.add('hidden');
+            document.getElementById('quizQuestion').classList.remove('hidden');
+            document.getElementById('quizProgress').parentElement.classList.remove('hidden');
+            loadQuizQuestion();
+        };
+
+        function loadQuizQuestion() {
+            const quiz = currentNote.quiz || [];
+            if (quiz.length === 0) {
+                 document.getElementById('quizQuestion').innerText = "No hay quiz disponible para esta nota.";
+                 return;
+            }
+            if (currentQuizIndex >= quiz.length) {
+                showQuizResult();
+                return;
+            }
+
+            const q = quiz[currentQuizIndex];
+            document.getElementById('quizQuestion').innerText = q.question;
+            document.getElementById('quizProgress').innerText = `Pregunta ${currentQuizIndex + 1} / ${quiz.length}`;
+            document.getElementById('quizScore').innerText = `Puntos: ${quizScore}`;
+
+            const optionsDiv = document.getElementById('quizOptions');
+            optionsDiv.innerHTML = '';
+
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-4 rounded-xl border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50 transition-all font-medium text-slate-700 relative overflow-hidden group";
+                btn.innerHTML = `<span class="relative z-10">${opt}</span>`;
+                btn.onclick = () => checkAnswer(idx, q.correctAnswer, btn);
+                optionsDiv.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selected, correct, btnElement) {
+            const buttons = document.getElementById('quizOptions').children;
+            for (let btn of buttons) {
+                btn.disabled = true; // Bloquear
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+            btnElement.classList.remove('opacity-50');
+            btnElement.classList.add('opacity-100');
+
+            if (selected === correct) {
+                btnElement.classList.remove('border-slate-200', 'hover:bg-indigo-50');
+                btnElement.classList.add('bg-green-100', 'border-green-500', 'text-green-800');
+                btnElement.innerHTML += ' <i class="fas fa-check float-right mt-1"></i>';
+                quizScore++;
+            } else {
+                btnElement.classList.remove('border-slate-200', 'hover:bg-indigo-50');
+                btnElement.classList.add('bg-red-100', 'border-red-500', 'text-red-800');
+                btnElement.innerHTML += ' <i class="fas fa-times float-right mt-1"></i>';
+                
+                // Mostrar correcta
+                const correctBtn = buttons[correct];
+                correctBtn.classList.remove('opacity-50', 'border-slate-200');
+                correctBtn.classList.add('bg-green-50', 'border-green-500', 'text-green-800');
+                correctBtn.innerHTML += ' <i class="fas fa-check float-right mt-1 opacity-50"></i>';
+            }
+
+            setTimeout(() => {
+                currentQuizIndex++;
+                loadQuizQuestion();
+            }, 1500);
+        }
+
+        function showQuizResult() {
+            document.getElementById('quizOptions').classList.add('hidden');
+            document.getElementById('quizQuestion').classList.add('hidden');
+            document.getElementById('quizProgress').parentElement.classList.add('hidden');
+            
+            const resDiv = document.getElementById('quizResult');
+            resDiv.classList.remove('hidden');
+            
+            const total = currentNote.quiz.length;
+            const percentage = Math.round((quizScore / total) * 100);
+            
+            document.getElementById('finalScoreText').innerHTML = `
+                <span class="text-4xl font-bold text-slate-900 block mb-2">${percentage}%</span>
+                Has respondido correctamente ${quizScore} de ${total} preguntas.
+            `;
+        }
+    </script>
+</body>
+</html>
