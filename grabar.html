@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grabar Clase - Plaud</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        .recording-pulse { animation: pulse-red 2s infinite; }
+        @keyframes pulse-red {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        /* Estilo para el dropdown negro solicitado */
+        select {
+            background-color: black !important;
+            color: white !important;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right .7em top 50%;
+            background-size: .65em auto;
+        }
+        select option {
+            background-color: black;
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen font-sans">
+
+    <!-- Navegación -->
+    <nav class="bg-black border-b border-slate-800 shadow-sm sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2 text-white font-bold text-xl">
+                <i class="fas fa-wave-square text-indigo-400"></i>
+                <span>Plaud</span>
+            </div>
+            <a href="ver_resumenes.html" class="text-sm font-medium text-slate-300 hover:text-white transition-colors">
+                Ver Resúmenes <i class="fas fa-arrow-right ml-1"></i>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Contenido Principal -->
+    <main class="max-w-2xl mx-auto px-4 py-8 space-y-6">
+        
+        <div class="text-center space-y-2">
+            <h1 class="text-3xl font-bold text-slate-900">Nueva Grabación</h1>
+            <p class="text-slate-500">Selecciona la asignatura y comienza a grabar sin límites.</p>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6">
+            
+            <!-- Selector de Asignatura Negro -->
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Asignatura</label>
+                <div class="relative">
+                    <select id="subjectSelect" class="w-full p-4 rounded-lg border border-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none font-medium text-lg shadow-sm">
+                        <option value="">Seleccionar asignatura...</option>
+                        <option value="Matemáticas">Matemáticas</option>
+                        <option value="Física y Química">Física y Química</option>
+                        <option value="Lengua">Lengua</option>
+                        <option value="Geografía">Geografía</option>
+                        <option value="TIC">TIC</option>
+                        <option value="ATE">ATE</option>
+                        <option value="EPVA">EPVA</option>
+                        <option value="Project">Project</option>
+                        <option value="Inglés">Inglés</option>
+                        <option value="Educación Física">Educación Física</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Botón de Grabación -->
+            <div class="flex flex-col items-center justify-center py-6 space-y-4">
+                <div id="recordBtnContainer" class="relative flex items-center justify-center w-36 h-36 rounded-full bg-slate-50 transition-all duration-300 cursor-pointer hover:bg-slate-100">
+                    <div id="pulseRing" class="absolute w-full h-full rounded-full bg-red-400 opacity-20 hidden"></div>
+                    <button id="toggleRecordBtn" class="relative z-10 w-28 h-28 rounded-full bg-black text-white shadow-xl flex items-center justify-center transition-all hover:scale-105 border-4 border-slate-100">
+                        <i id="micIcon" class="fas fa-microphone text-4xl"></i>
+                    </button>
+                </div>
+                <div class="text-center">
+                    <p id="statusText" class="text-xl font-medium text-slate-500">Toca para grabar</p>
+                    <p id="timeText" class="text-base text-slate-400 mt-1 font-mono opacity-0">00:00:00</p>
+                </div>
+            </div>
+
+            <!-- Transcripción en vivo (Limitada a 300 chars visibles) -->
+            <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 min-h-[140px] relative">
+                <h3 class="text-xs font-bold text-slate-400 uppercase mb-2 flex justify-between items-center">
+                    <span>Transcripción en vivo</span>
+                    <span class="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded font-bold">LIVE</span>
+                </h3>
+                <div class="relative overflow-hidden h-24">
+                     <!-- Gradiente superior para efecto de desvanecimiento -->
+                    <div class="absolute top-0 left-0 w-full h-8 bg-gradient-to-b from-slate-50 to-transparent z-10"></div>
+                    
+                    <p id="transcriptText" class="text-slate-600 text-sm leading-relaxed italic break-words absolute bottom-0 w-full">
+                        ...esperando audio...
+                    </p>
+                </div>
+                <p class="text-[10px] text-slate-400 text-center mt-2">Se muestran solo las últimas palabras. Todo se está grabando.</p>
+            </div>
+
+            <!-- Botón Parar y Procesar -->
+            <button id="processBtn" disabled class="w-full py-4 bg-slate-200 text-slate-400 rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow-sm">
+                <i class="fas fa-stop-circle"></i>
+                <span>Parar y Procesar Clase</span>
+            </button>
+            
+            <!-- Loader -->
+            <div id="loader" class="hidden text-center py-8 bg-indigo-50 rounded-lg border border-indigo-100">
+                <i class="fas fa-circle-notch fa-spin text-indigo-600 text-4xl mb-4"></i>
+                <h3 class="text-lg font-bold text-indigo-900">Procesando con IA...</h3>
+                <p class="text-sm text-indigo-700 mt-2 px-4">Estamos analizando toda la grabación para generar resumen, quiz y flashcards.</p>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+
+        // --- CONFIGURACIÓN FIREBASE (RTDB PÚBLICA) ---
+        const firebaseConfig = {
+            databaseURL: "https://chatpro-23332-default-rtdb.asia-southeast1.firebasedatabase.app/"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // --- CONFIGURACIÓN MISTRAL ---
+        const MISTRAL_API_KEY = "evxly62Xv91b752fbnHA2I3HD988C5RT";
+        const API_ENDPOINT = "https://api.mistral.ai/v1/chat/completions";
+
+        // DOM Elements
+        const subjectSelect = document.getElementById('subjectSelect');
+        const toggleBtn = document.getElementById('toggleRecordBtn');
+        const pulseRing = document.getElementById('pulseRing');
+        const micIcon = document.getElementById('micIcon');
+        const statusText = document.getElementById('statusText');
+        const timeText = document.getElementById('timeText');
+        const transcriptDisplay = document.getElementById('transcriptText');
+        const processBtn = document.getElementById('processBtn');
+        const loader = document.getElementById('loader');
+
+        // State Variables
+        let isRecording = false;
+        let fullTranscript = ''; // Guarda TODO el texto (+40 mins)
+        let recognition = null;
+        let startTime = null;
+        let timerInterval = null;
+
+        // --- SPEECH RECOGNITION SETUP ---
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = true; // Permite grabación continua
+            recognition.interimResults = true;
+            recognition.lang = 'es-ES';
+
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        fullTranscript += event.results[i][0].transcript + ' ';
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+                
+                // --- LÓGICA DE VISUALIZACIÓN LIMITADA (300 CHARS) ---
+                const combinedText = fullTranscript + interimTranscript;
+                if (combinedText.length > 300) {
+                    transcriptDisplay.innerText = "..." + combinedText.slice(-300);
+                } else {
+                    transcriptDisplay.innerText = combinedText || "...escuchando...";
+                }
+                
+                updateProcessButton();
+            };
+
+            // --- LÓGICA DE GRABACIÓN INFINITA ---
+            // Si el navegador corta la grabación por silencio o tiempo, la reiniciamos inmediatamente
+            recognition.onend = () => {
+                if (isRecording) {
+                    console.log("Reiniciando microfono para grabación continua...");
+                    try { 
+                        recognition.start(); 
+                    } catch (e) { 
+                        console.log("Error al reiniciar inmediato, esperando 1s...");
+                        setTimeout(() => { if(isRecording) recognition.start(); }, 1000);
+                    }
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.error("Error Speech:", event.error);
+                // Si hay error de red o 'no-speech', el onend se encargará de reiniciar
+            };
+        } else {
+            alert("Tu navegador no soporta reconocimiento de voz. Por favor usa Google Chrome.");
+        }
+
+        // --- TEMPORIZADOR ---
+        function startTimer() {
+            startTime = Date.now();
+            timeText.classList.remove('opacity-0');
+            timerInterval = setInterval(() => {
+                const diff = Date.now() - startTime;
+                const hours = Math.floor(diff / 3600000).toString().padStart(2, '0');
+                const minutes = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
+                const seconds = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+                timeText.innerText = `${hours}:${minutes}:${seconds}`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+        }
+
+        // --- MANEJO DE GRABACIÓN ---
+        toggleBtn.addEventListener('click', () => {
+            if (!subjectSelect.value) {
+                alert("Por favor selecciona una asignatura primero.");
+                return;
+            }
+
+            if (isRecording) {
+                // El botón principal ahora PAUSA/PARA la sesión para permitir procesar
+                stopRecordingSession();
+            } else {
+                startRecordingSession();
+            }
+        });
+
+        function startRecordingSession() {
+            isRecording = true;
+            fullTranscript = ''; 
+            transcriptDisplay.innerText = 'Iniciando...';
+            
+            // UI Visuals
+            toggleBtn.classList.remove('bg-black', 'border-slate-100');
+            toggleBtn.classList.add('bg-red-600', 'border-red-200', 'animate-pulse');
+            micIcon.classList.remove('fa-microphone');
+            micIcon.classList.add('fa-stop');
+            
+            pulseRing.classList.remove('hidden');
+            pulseRing.classList.add('recording-pulse');
+            
+            statusText.innerText = "GRABANDO";
+            statusText.classList.add('text-red-600', 'font-bold');
+            
+            startTimer();
+
+            try { recognition.start(); } catch(e) { console.log(e); }
+        }
+
+        function stopRecordingSession() {
+            isRecording = false; // Esto detiene el bucle infinito en onend
+            stopTimer();
+            
+            // UI Visuals
+            toggleBtn.classList.add('bg-black', 'border-slate-100');
+            toggleBtn.classList.remove('bg-red-600', 'border-red-200', 'animate-pulse');
+            micIcon.classList.add('fa-microphone');
+            micIcon.classList.remove('fa-stop');
+            
+            pulseRing.classList.add('hidden');
+            pulseRing.classList.remove('recording-pulse');
+            
+            statusText.innerText = "Grabación detenida";
+            statusText.classList.remove('text-red-600', 'font-bold');
+
+            try { recognition.stop(); } catch(e) { console.log(e); }
+            updateProcessButton();
+        }
+
+        function updateProcessButton() {
+            // Habilitar botón de procesar si hay texto y NO estamos grabando activamente
+            if (fullTranscript.length > 5 && !isRecording) {
+                processBtn.disabled = false;
+                processBtn.classList.remove('bg-slate-200', 'text-slate-400');
+                processBtn.classList.add('bg-black', 'text-white', 'hover:bg-gray-800', 'cursor-pointer');
+            } else {
+                processBtn.disabled = true;
+                processBtn.classList.add('bg-slate-200', 'text-slate-400');
+                processBtn.classList.remove('bg-black', 'text-white', 'hover:bg-gray-800', 'cursor-pointer');
+            }
+        }
+
+        // --- PROCESAMIENTO CON IA ---
+        processBtn.addEventListener('click', async () => {
+            if (!fullTranscript) return;
+
+            processBtn.classList.add('hidden');
+            loader.classList.remove('hidden');
+            
+            const subject = subjectSelect.value;
+            // Recortar para la IA si excede límites seguros, pero guardar todo en DB
+            const contextForAI = fullTranscript.substring(0, 20000); 
+
+            const prompt = `
+                Actúa como un profesor experto de ${subject}.
+                Analiza la siguiente transcripción de clase. Puede haber errores de reconocimiento de voz, interprétalos por contexto.
+                Genera un JSON válido con esta estructura exacta:
+                {
+                  "summary": "Resumen completo y estructurado de la clase (aprox 200 palabras)",
+                  "keyPoints": ["Punto clave 1", "Punto clave 2", "Punto clave 3", "Punto clave 4", "Punto clave 5"],
+                  "flashcards": [
+                    {"front": "Pregunta conceptual 1", "back": "Respuesta breve"}, 
+                    {"front": "Pregunta conceptual 2", "back": "Respuesta breve"},
+                    {"front": "Pregunta conceptual 3", "back": "Respuesta breve"},
+                    {"front": "Pregunta conceptual 4", "back": "Respuesta breve"},
+                    {"front": "Pregunta conceptual 5", "back": "Respuesta breve"}
+                   ],
+                  "quiz": [
+                    {"question": "Pregunta 1", "options": ["A", "B", "C", "D"], "correctAnswer": 0},
+                    {"question": "Pregunta 2", "options": ["A", "B", "C", "D"], "correctAnswer": 1},
+                    {"question": "Pregunta 3", "options": ["A", "B", "C", "D"], "correctAnswer": 2}
+                   ]
+                }
+                
+                Transcripción: "${contextForAI}"
+            `;
+
+            try {
+                const response = await fetch(API_ENDPOINT, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${MISTRAL_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: "mistral-medium",
+                        messages: [{ role: "user", content: prompt }],
+                        response_format: { type: "json_object" }
+                    })
+                });
+
+                if (!response.ok) throw new Error("Error en API Mistral: " + response.statusText);
+
+                const data = await response.json();
+                const aiContent = JSON.parse(data.choices[0].message.content);
+
+                // --- GUARDAR EN FIREBASE ---
+                const notesRef = ref(db, 'public_notes');
+                const newNoteRef = push(notesRef);
+                await set(newNoteRef, {
+                    subject: subject,
+                    transcript: fullTranscript, // Guardamos el texto completo original
+                    summary: aiContent.summary,
+                    keyPoints: aiContent.keyPoints,
+                    flashcards: aiContent.flashcards,
+                    quiz: aiContent.quiz,
+                    timestamp: Date.now()
+                });
+
+                alert("¡Clase guardada exitosamente!");
+                window.location.href = "ver_resumenes.html";
+
+            } catch (error) {
+                console.error(error);
+                alert("Ocurrió un error al procesar la clase: " + error.message);
+                loader.classList.add('hidden');
+                processBtn.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
