@@ -375,7 +375,7 @@
                 </div>
 
                 <!-- TAB: MIND MAP (BETA) -->
-                <div id="mindmapTab" class="hidden">
+                <div id="mindmapTab" class="hidden h-[650px]">
                     <!-- Estado: Vacio / Generar -->
                     <div id="mindmapEmptyState"
                         class="w-full text-center py-12 bg-white rounded-xl border border-dashed border-slate-300">
@@ -393,23 +393,72 @@
 
                     <!-- Estado: Cargando -->
                     <div id="mindmapLoading"
-                        class="hidden flex flex-col items-center justify-center h-64 bg-slate-50 rounded-xl border border-slate-200">
+                        class="hidden flex flex-col items-center justify-center h-full bg-slate-50 rounded-xl border border-slate-200">
                         <i class="fas fa-circle-notch fa-spin text-indigo-500 text-3xl mb-4"></i>
                         <p class="text-slate-500">Diseñando estructura...</p>
                     </div>
 
-                    <!-- Estado: Contenido -->
-                    <div id="mindmapContent"
-                        class="hidden bg-white p-4 rounded-xl border border-slate-200 overflow-x-auto">
-                        <div id="mermaidContainer" class="flex justify-center min-w-[600px]"></div>
-                        <div class="text-center mt-4">
-                            <p class="text-xs text-slate-400">Generado con Mermaid.js</p>
+                    <!-- Estado: Contenido + Chat -->
+                    <div id="mindmapContent" class="hidden h-full grid grid-cols-1 lg:grid-cols-4 gap-6">
+                        <!-- Canvas Mapa -->
+                        <div
+                            class="lg:col-span-3 bg-white rounded-xl border border-slate-200 relative overflow-hidden flex flex-col shadow-sm">
+                            <div class="absolute top-4 right-4 z-10 flex gap-2">
+                                <button onclick="zoomMap(0.1)"
+                                    class="bg-white/90 p-2 rounded-lg shadow border border-slate-200 hover:bg-indigo-50"><i
+                                        class="fas fa-plus"></i></button>
+                                <button onclick="zoomMap(-0.1)"
+                                    class="bg-white/90 p-2 rounded-lg shadow border border-slate-200 hover:bg-indigo-50"><i
+                                        class="fas fa-minus"></i></button>
+                                <button onclick="resetMapZoom()"
+                                    class="bg-white/90 p-2 rounded-lg shadow border border-slate-200 hover:bg-indigo-50"><i
+                                        class="fas fa-compress-arrows-alt"></i></button>
+                            </div>
+                            <div id="mapWrapper"
+                                class="w-full h-full cursor-grab active:cursor-grabbing flex items-center justify-center origin-center transition-transform duration-75"
+                                onmousedown="startMapDrag(event)" onmousemove="dragMap(event)" onmouseup="endMapDrag()"
+                                onmouseleave="endMapDrag()" onwheel="handleMapWheel(event)">
+                                <div id="mermaidContainer" class="pointer-events-none select-none"></div>
+                            </div>
+                        </div>
+
+                        <!-- Chat IA -->
+                        <div
+                            class="lg:col-span-1 bg-white rounded-xl border border-slate-200 flex flex-col shadow-sm overflow-hidden h-full">
+                            <div class="p-4 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
+                                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                <h3 class="font-bold text-slate-700 text-sm">Asistente de Mapa</h3>
+                            </div>
+                            <!-- Mensajes -->
+                            <div id="chatMapMessages" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
+                                <div class="flex gap-3">
+                                    <div
+                                        class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0 text-xs">
+                                        <i class="fas fa-robot"></i>
+                                    </div>
+                                    <div
+                                        class="bg-white p-3 rounded-r-xl rounded-bl-xl shadow-sm text-sm text-slate-600 border border-slate-100">
+                                        Hola. Puedo modificar este mapa mental por ti. ¿Qué necesitas cambiar?
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Input -->
+                            <div class="p-3 border-t border-slate-200 bg-white">
+                                <form onsubmit="event.preventDefault(); sendAIChat('mindmap');" class="relative">
+                                    <input type="text" id="chatMapInput" placeholder="Ej: Añade más ramas..."
+                                        class="w-full pl-4 pr-10 py-2 bg-slate-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 border-none">
+                                    <button type="submit"
+                                        class="absolute right-2 top-1.5 w-7 h-7 bg-indigo-600 text-white rounded-full flex items-center justify-center hover:bg-indigo-700 transition-colors">
+                                        <i class="fas fa-paper-plane text-xs"></i>
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- TAB: PRESENTATION (BETA) -->
-                <div id="presentationTab" class="hidden">
+                <div id="presentationTab" class="hidden h-[650px]">
                     <!-- Estado: Vacio / Generar -->
                     <div id="presentationEmptyState"
                         class="w-full text-center py-12 bg-white rounded-xl border border-dashed border-slate-300">
@@ -441,14 +490,85 @@
 
                     <!-- Estado: Cargando -->
                     <div id="presentationLoading"
-                        class="hidden flex flex-col items-center justify-center h-64 bg-slate-50 rounded-xl border border-slate-200">
+                        class="hidden flex flex-col items-center justify-center h-full bg-slate-50 rounded-xl border border-slate-200">
                         <i class="fas fa-circle-notch fa-spin text-indigo-500 text-3xl mb-4"></i>
                         <p class="text-slate-500">Redactando diapositivas...</p>
                     </div>
 
-                    <!-- Estado: Contenido -->
-                    <div id="presentationContent" class="hidden space-y-8">
-                        <div id="slidesContainer" class="space-y-6"></div>
+                    <!-- Estado: Contenido + Chat -->
+                    <div id="presentationContent" class="hidden h-full grid grid-cols-1 lg:grid-cols-4 gap-6">
+                        <!-- Slides Container -->
+                        <div class="lg:col-span-3 flex flex-col h-full space-y-4">
+                            <!-- Viewport Slide -->
+                            <div id="currentSlideViewport"
+                                class="flex-1 bg-white rounded-xl shadow-lg border border-slate-200 relative overflow-hidden flex flex-col justify-center p-8 md:p-12">
+                                <!-- Se inyecta la slide aquí -->
+                            </div>
+
+                            <!-- Botones Físicos -->
+                            <div
+                                class="bg-slate-800 rounded-xl p-3 flex justify-between items-center shadow-xl border-b-4 border-slate-950">
+                                <div class="flex items-center gap-2 px-4">
+                                    <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                                    <span class="text-slate-400 text-xs font-mono">LIVE PRESENTATION</span>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <button onclick="prevSlide()"
+                                        class="active:scale-95 transform transition-transform bg-slate-700 text-white w-12 h-12 rounded-lg shadow-[0_4px_0_rgb(30,41,59)] active:shadow-[0_0px_0_rgb(30,41,59)] active:translate-y-1 mb-1 border-t border-slate-600 flex items-center justify-center">
+                                        <i class="fas fa-caret-left text-2xl"></i>
+                                    </button>
+                                    <span id="slideCounterDisplay"
+                                        class="font-mono text-indigo-400 font-bold bg-black/30 px-4 py-2 rounded-md border border-slate-700">1
+                                        / 5</span>
+                                    <button onclick="nextSlide()"
+                                        class="active:scale-95 transform transition-transform bg-slate-700 text-white w-12 h-12 rounded-lg shadow-[0_4px_0_rgb(30,41,59)] active:shadow-[0_0px_0_rgb(30,41,59)] active:translate-y-1 mb-1 border-t border-slate-600 flex items-center justify-center">
+                                        <i class="fas fa-caret-right text-2xl"></i>
+                                    </button>
+                                </div>
+                                <div class="px-4">
+                                    <button onclick="toggleFullScreenSlide()"
+                                        class="text-slate-400 hover:text-white transition-colors"
+                                        title="Pantalla completa">
+                                        <i class="fas fa-expand"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chat IA -->
+                        <div
+                            class="lg:col-span-1 bg-white rounded-xl border border-slate-200 flex flex-col shadow-sm overflow-hidden h-full">
+                            <div class="p-4 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
+                                <div class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
+                                <h3 class="font-bold text-slate-700 text-sm">Editor de Diapositivas</h3>
+                            </div>
+                            <!-- Mensajes -->
+                            <div id="chatPresentationMessages"
+                                class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
+                                <div class="flex gap-3">
+                                    <div
+                                        class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0 text-xs">
+                                        <i class="fas fa-robot"></i>
+                                    </div>
+                                    <div
+                                        class="bg-white p-3 rounded-r-xl rounded-bl-xl shadow-sm text-sm text-slate-600 border border-slate-100">
+                                        ¿Quieres cambiar algún texto o añadir una nueva diapositiva?
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Input -->
+                            <div class="p-3 border-t border-slate-200 bg-white">
+                                <form onsubmit="event.preventDefault(); sendAIChat('presentation');" class="relative">
+                                    <input type="text" id="chatPresentationInput"
+                                        placeholder="Ej: Cambia el título de la 2..."
+                                        class="w-full pl-4 pr-10 py-2 bg-slate-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 border-none">
+                                    <button type="submit"
+                                        class="absolute right-2 top-1.5 w-7 h-7 bg-indigo-600 text-white rounded-full flex items-center justify-center hover:bg-indigo-700 transition-colors">
+                                        <i class="fas fa-paper-plane text-xs"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -652,6 +772,12 @@
             document.getElementById('mindmapTab').classList.add('hidden');
             document.getElementById('presentationTab').classList.add('hidden');
 
+            // Ocultar Summary SIEMPRE si no es la tab activa
+            // El usuario pidió: "que al darle a cualquiera de las cosas de arriba se quite lo del resumen"
+            // Originalmente 'summaryTab' estaba siempre visible como parte de la estructura. 
+            // Ahora lo trataremos como una tab normal.
+            document.getElementById('summaryTab').classList.add('hidden');
+
             if (tabName === 'summary') {
                 document.getElementById('summaryTab').classList.remove('hidden');
                 loadSummary();
@@ -780,6 +906,9 @@
                 document.getElementById('mindmapEmptyState').classList.add('hidden');
                 document.getElementById('mindmapContent').classList.remove('hidden');
 
+                // Reset zoom/pan state
+                resetMapZoom();
+
                 const container = document.getElementById('mermaidContainer');
                 container.innerHTML = `<pre class="mermaid">${mapCode}</pre>`;
                 try {
@@ -799,30 +928,261 @@
                 document.getElementById('presentationContent').classList.remove('hidden');
 
                 const container = document.getElementById('slidesContainer');
-                container.innerHTML = '';
+                // container.innerHTML = ''; // Legacy, now using Viewport
 
-                slides.forEach((slide, idx) => {
-                    const slideDiv = document.createElement('div');
-                    slideDiv.className = "bg-white p-6 md:p-8 rounded-xl shadow-lg border border-slate-200 aspect-video flex flex-col justify-center relative overflow-hidden";
+                // Set Global State
+                window.currentSlides = slides;
+                window.currentSlideIndex = 0;
 
-                    // Background decoration
-                    slideDiv.innerHTML = `
-                        <div class="absolute top-0 right-0 p-4 opacity-10 text-6xl text-indigo-500 font-bold font-serif">
-                            ${idx + 1}
-                        </div>
-                        <h2 class="text-2xl md:text-3xl font-bold text-slate-800 mb-6 border-b-2 border-indigo-500 pb-2 w-fit pr-8">${slide.title}</h2>
-                        <ul class="space-y-3 text-lg text-slate-600 list-disc pl-6 marker:text-indigo-400">
-                            ${slide.points.map(p => `<li>${p}</li>`).join('')}
-                        </ul>
-                     `;
-                    container.appendChild(slideDiv);
-                });
+                renderCurrentSlide();
 
             } else {
                 document.getElementById('presentationEmptyState').classList.remove('hidden');
                 document.getElementById('presentationContent').classList.add('hidden');
             }
         }
+
+        // --- NEW SLIDE LOGIC ---
+        window.renderCurrentSlide = () => {
+            if (!window.currentSlides || window.currentSlides.length === 0) return;
+
+            const slide = window.currentSlides[window.currentSlideIndex];
+            const viewport = document.getElementById('currentSlideViewport');
+
+            const idx = window.currentSlideIndex;
+            const total = window.currentSlides.length;
+
+            // Update counter
+            document.getElementById('slideCounterDisplay').innerText = `${idx + 1} / ${total}`;
+
+            // Render Slide
+            viewport.innerHTML = `
+                <div class="absolute top-0 right-0 p-8 opacity-10 text-9xl text-indigo-500 font-bold font-serif select-none pointer-events-none">
+                    ${idx + 1}
+                </div>
+                <div class="z-10 animate-fade-in">
+                    <h2 class="text-3xl md:text-5xl font-bold text-slate-900 mb-8 border-b-4 border-indigo-500 pb-4 inline-block">${slide.title}</h2>
+                    <ul class="space-y-6 text-xl md:text-2xl text-slate-700 list-disc pl-8 marker:text-indigo-500">
+                        ${slide.points.map(p => `<li>${p}</li>`).join('')}
+                    </ul>
+                </div>
+                 <div class="absolute bottom-4 right-4 text-slate-300 text-sm font-mono">PlaudViewer</div>
+             `;
+        };
+
+        window.nextSlide = () => {
+            if (!window.currentSlides) return;
+            if (window.currentSlideIndex < window.currentSlides.length - 1) {
+                window.currentSlideIndex++;
+                renderCurrentSlide();
+            }
+        };
+
+        window.prevSlide = () => {
+            if (!window.currentSlides) return;
+            if (window.currentSlideIndex > 0) {
+                window.currentSlideIndex--;
+                renderCurrentSlide();
+            }
+        };
+
+        window.toggleFullScreenSlide = () => {
+            const elem = document.getElementById('currentSlideViewport');
+            if (!document.fullscreenElement) {
+                elem.requestFullscreen().catch(err => {
+                    alert(`Error al intentar pantalla completa: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        };
+
+        // --- MAP INTERACTIVITY LOGIC ---
+        let mapState = { scale: 1, panning: false, startX: 0, startY: 0, x: 0, y: 0 };
+
+        window.startMapDrag = (e) => {
+            if (e.target.closest('button')) return; // Ignore buttons
+            mapState.panning = true;
+            mapState.startX = e.clientX - mapState.x;
+            mapState.startY = e.clientY - mapState.y;
+            document.getElementById('mapWrapper').classList.add('cursor-grabbing');
+            document.getElementById('mapWrapper').classList.remove('cursor-grab');
+        };
+
+        window.dragMap = (e) => {
+            if (!mapState.panning) return;
+            e.preventDefault();
+            mapState.x = e.clientX - mapState.startX;
+            mapState.y = e.clientY - mapState.startY;
+            updateMapTransform();
+        };
+
+        window.endMapDrag = () => {
+            mapState.panning = false;
+            document.getElementById('mapWrapper').classList.remove('cursor-grabbing');
+            document.getElementById('mapWrapper').classList.add('cursor-grab');
+        };
+
+        window.handleMapWheel = (e) => {
+            if (e.ctrlKey || e.metaKey || true) { // Always zoom on wheel inside map container
+                e.preventDefault();
+                const zoomSensitivity = 0.001;
+                const delta = -e.deltaY * zoomSensitivity;
+                const newScale = mapState.scale + delta;
+                mapState.scale = Math.min(Math.max(newScale, 0.5), 5); // Limit zoom 0.5x to 5x
+                updateMapTransform();
+            }
+        };
+
+        window.zoomMap = (amount) => {
+            mapState.scale = Math.min(Math.max(mapState.scale + amount, 0.5), 5);
+            updateMapTransform();
+        };
+
+        window.resetMapZoom = () => {
+            mapState.scale = 1;
+            mapState.x = 0;
+            mapState.y = 0;
+            updateMapTransform();
+        };
+
+        function updateMapTransform() {
+            const el = document.getElementById('mapWrapper').firstElementChild; // mermaid container wrapper? No, mermaidContainer itself is inside.
+            // Actually the listener is on mapWrapper, but we transform the content inside.
+            // Wait, implementation above: mapWrapper > mermaidContainer
+            const container = document.getElementById('mermaidContainer');
+            container.style.transform = `translate(${mapState.x}px, ${mapState.y}px) scale(${mapState.scale})`;
+        }
+
+        // --- AI CHAT LOGIC ---
+        window.sendAIChat = async (mode) => {
+            const inputId = mode === 'mindmap' ? 'chatMapInput' : 'chatPresentationInput';
+            const msgContainerId = mode === 'mindmap' ? 'chatMapMessages' : 'chatPresentationMessages';
+
+            const input = document.getElementById(inputId);
+            const text = input.value.trim();
+            if (!text) return;
+
+            // Add User Message
+            const container = document.getElementById(msgContainerId);
+            container.innerHTML += `
+               <div class="flex gap-3 flex-row-reverse animate-fade-in">
+                    <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-white shrink-0 text-xs">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="bg-indigo-600 text-white p-3 rounded-l-xl rounded-br-xl shadow-sm text-sm">
+                        ${text}
+                    </div>
+                </div>
+            `;
+            input.value = '';
+            container.scrollTop = container.scrollHeight;
+
+            // Loading msg
+            const loadingId = `loading-${Date.now()}`;
+            container.innerHTML += `
+               <div id="${loadingId}" class="flex gap-3 animate-pulse">
+                    <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0 text-xs">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="bg-white p-3 rounded-r-xl rounded-bl-xl shadow-sm text-sm text-slate-400 border border-slate-100 italic">
+                        Pensando...
+                    </div>
+                </div>
+            `;
+            container.scrollTop = container.scrollHeight;
+
+            // Build Prompt
+            let context = "";
+            let dataContext = "";
+
+            if (mode === 'mindmap') {
+                const currentMap = localData.mindmap || currentNote.mindmap;
+                context = `El usuario quiere modificar el siguiente diagrama Mermaid: \n\n${currentMap}`;
+                dataContext = "Devuelve ÚNICAMENTE el código Mermaid actualizado en un JSON: {\"mermaidCode\": \"...\"}";
+            } else {
+                const currentSlides = window.currentSlides;
+                context = `El usuario quiere modificar la presentación actual (JSON): \n\n${JSON.stringify(currentSlides)}`;
+                dataContext = "Devuelve ÚNICAMENTE el JSON actualizado de las slides: {\"slides\": [...]}";
+            }
+
+            const prompt = `
+                ${context}
+                
+                Petición del usuario: "${text}"
+                
+                Instrucciones:
+                1. Modifica el contenido según lo pide el usuario.
+                2. Mantén la estructura válida.
+                3. ${dataContext}
+            `;
+
+            try {
+                const response = await fetch(API_ENDPOINT, {
+                    method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${MISTRAL_API_KEY}` },
+                    body: JSON.stringify({ model: "mistral-medium", messages: [{ role: "user", content: prompt }], response_format: { type: "json_object" } })
+                });
+
+                const data = await response.json();
+                const content = JSON.parse(data.choices[0].message.content);
+
+                // Remove loading
+                document.getElementById(loadingId).remove();
+
+                // Add Bot Success Message
+                container.innerHTML += `
+                   <div class="flex gap-3 animate-fade-in">
+                        <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0 text-xs">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="bg-white p-3 rounded-r-xl rounded-bl-xl shadow-sm text-sm text-slate-600 border border-slate-100">
+                            ¡Listo! He actualizado el contenido.
+                        </div>
+                    </div>
+                `;
+                container.scrollTop = container.scrollHeight;
+
+                // Update Data Logic
+                // Update Data Logic
+                if (mode === 'mindmap') {
+                    let code = content.mermaidCode;
+                    code = code.replace(/```mermaid/g, '').replace(/```/g, '').trim();
+
+                    // Save & Render
+                    localData.mindmap = code;
+                    // currentNote.mindmap = code; // Optional: update memory, but localData is source of truth now
+                    loadMindmap(code); // Rerender
+
+                    // Local Storage ONLY
+                    localStorage.setItem(`plaud_local_${currentNote.id}`, JSON.stringify(localData));
+
+                } else {
+                    const newSlides = content.slides;
+
+                    // Save & Render
+                    localData.presentation = newSlides;
+                    // currentNote.presentation = newSlides;
+                    loadPresentation(newSlides); // Rerender
+
+                    // Local Storage ONLY
+                    localStorage.setItem(`plaud_local_${currentNote.id}`, JSON.stringify(localData));
+                }
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById(loadingId).remove();
+                container.innerHTML += `
+                   <div class="flex gap-3">
+                        <div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600 shrink-0 text-xs">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="bg-white p-3 rounded-r-xl rounded-bl-xl shadow-sm text-sm text-red-600 border border-red-100">
+                            Ups, hubo un error procesando tu solicitud. Intenta de nuevo.
+                        </div>
+                    </div>
+                `;
+            }
+        };
 
         function loadQuizQuestion(quizOverride = null) {
             const quiz = quizOverride || localData.quiz || currentNote.quiz || [];
@@ -984,11 +1344,14 @@
             } else if (type === 'mindmap') {
                 jsonKey = "mindmap_data";
                 prompt = `
-                    Genera un diagrama Mermaid.js (graph TD) que represente la estructura de esta clase.
-                    El código debe ser válido para incrustar.
+                    Genera un diagrama de mapa mental en formato Mermaid mindmap (más compacto y radial).
+                    Usa la sintaxis: mindmap\\n  root((Tema Central))\\n    Rama1\\n      Detalle1\\n      Detalle2\\n    Rama2\\n      Detalle3
+                    
+                    IMPORTANTE: Usa el formato mindmap, NO graph TD.
+                    
                     Formato JSON:
                     {
-                        "mermaidCode": "graph TD; A[Tema Principal] --> B[Subtema 1]; B --> C[Detalle];"
+                        "mermaidCode": "mindmap\\n  root((Tema Principal))\\n    Subtema1\\n      Detalle\\n    Subtema2"
                     }
                     La transcripción es: "${contextForAI}"
                 `;
@@ -1058,16 +1421,18 @@
                     updates[`/public_notes/${currentNote.id}/quiz`] = finalData.quiz;
                     currentNote.quiz = finalData.quiz;
                 }
+
+                // NOT Saving Mindmap/Presentation to Firebase (Local Only)
                 if (finalData.mindmap) {
-                    updates[`/public_notes/${currentNote.id}/mindmap`] = finalData.mindmap;
-                    currentNote.mindmap = finalData.mindmap;
+                    // Solo local
                 }
                 if (finalData.presentation) {
-                    updates[`/public_notes/${currentNote.id}/presentation`] = finalData.presentation;
-                    currentNote.presentation = finalData.presentation;
+                    // Solo local
                 }
 
-                await update(ref(db), updates);
+                if (Object.keys(updates).length > 0) {
+                    await update(ref(db), updates);
+                }
 
                 // UI Refresh
                 document.getElementById(`${type}Loading`).classList.add('hidden');
