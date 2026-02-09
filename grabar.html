@@ -47,6 +47,53 @@
             background-color: black;
             color: white;
         }
+
+        /* Custom Scrollbar for Transcript */
+        #overlayTranscript::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #overlayTranscript::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        #overlayTranscript::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+
+        /* Animation utilities */
+        .animate-in {
+            animation-fill-mode: both;
+        }
+
+        .fade-in {
+            animation-name: fade-in-keyframes;
+        }
+
+        .zoom-in-95 {
+            animation-name: zoom-in-95-keyframes;
+        }
+
+        @keyframes fade-in-keyframes {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes zoom-in-95-keyframes {
+            from {
+                transform: scale(0.95);
+            }
+
+            to {
+                transform: scale(1);
+            }
+        }
     </style>
 </head>
 
@@ -180,10 +227,37 @@
             <div class="absolute top-0 w-full h-20 bg-gradient-to-b from-black to-transparent z-10"></div>
             <div class="absolute bottom-0 w-full h-20 bg-gradient-to-t from-black to-transparent z-10"></div>
 
-            <p id="overlayTranscript"
-                class="text-3xl md:text-4xl leading-relaxed text-slate-200 font-medium text-center h-[60vh] overflow-hidden flex flex-col justify-end pb-10 transition-all">
-                Esperando voz...
-            </p>
+            <div class="relative w-full max-w-5xl h-[60vh] flex flex-col justify-end pb-10">
+                <!-- Stats Bar Floating -->
+                <div id="overlayStats"
+                    class="absolute top-0 right-0 left-0 mx-auto w-fit flex flex-wrap justify-center gap-4 sm:gap-6 p-3 bg-black/40 backdrop-blur-md rounded-full border border-white/10 text-slate-300 font-mono text-xs sm:text-sm transition-all duration-300 z-20">
+                    <div class="flex items-center gap-2">
+                        <span class="text-slate-500 uppercase tracking-wider text-[10px]">Tiempo</span>
+                        <span id="statTime" class="font-bold text-white">00:00</span>
+                    </div>
+                    <div class="w-px bg-white/10 h-4 self-center"></div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-slate-500 uppercase tracking-wider text-[10px]">WPM</span>
+                        <span id="statWPM" class="font-bold text-indigo-400">0</span>
+                    </div>
+                    <div class="w-px bg-white/10 h-4 self-center"></div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-slate-500 uppercase tracking-wider text-[10px]">Palabras</span>
+                        <span id="statWords" class="font-bold text-emerald-400">0</span>
+                    </div>
+                    <div class="w-px bg-white/10 h-4 self-center"></div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-slate-500 uppercase tracking-wider text-[10px]">Cars</span>
+                        <span id="statChars" class="font-bold text-slate-200">0</span>
+                    </div>
+                </div>
+
+                <div id="overlayTranscript"
+                    class="text-3xl md:text-5xl leading-tight text-white font-medium text-center h-full overflow-y-auto flex flex-col justify-end transition-all px-4 pb-12 mask-image-b">
+                    <!-- Text will be injected here -->
+                    <span class="opacity-50 italic text-2xl">Esperando voz...</span>
+                </div>
+            </div>
         </div>
 
         <!-- Button to Stop -->
@@ -227,8 +301,14 @@
         // Overlay Elements
         const overlay = document.getElementById('fullScreenOverlay');
         const overlayTranscript = document.getElementById('overlayTranscript');
-        const overlayTimeText = document.getElementById('overlayTimeText');
+        const overlayTimeText = document.getElementById('overlayTimeText'); // Header time
         const overlayStopBtn = document.getElementById('overlayStopBtn');
+
+        // Stats Elements
+        const statTime = document.getElementById('statTime');
+        const statWPM = document.getElementById('statWPM');
+        const statWords = document.getElementById('statWords');
+        const statChars = document.getElementById('statChars');
 
         overlayStopBtn.onclick = () => {
             // Simulamos click en el botón principal para detener
@@ -311,40 +391,83 @@
                         // HEURÍSTICA: Si falta espacio visualmente entre palabras, lo forzamos
                         // (Por si el tracking se desfasó o el audio vino pegado)
                         const lastChar = overlayTranscript.innerText.slice(-1);
-                        if (overlayTranscript.innerText.length > 0 && lastChar !== ' ' && lastChar !== '\n' && newPart[0] !== ' ') {
+                        // Verificamos si necesitamos espacio extra (simple check)
+                        if (overlayTranscript.innerText.length > 0 &&
+                            !/\s/.test(lastChar) &&
+                            !/^\s/.test(newPart) &&
+                            overlayTranscript.innerText !== "Esperando voz...") {
                             newPart = ' ' + newPart;
-                            // Actualizamos el dataset para incluir este espacio extra y no perder sync
                             currentDisplayed += ' ';
-                            overlayTranscript.dataset.fullText = currentDisplayed;
+                            // No actualizamos dataset aquí para mantener sync pura con fullTranscript, 
+                            // pero visualmente lo necesitamos
                         }
 
-                        typeWriterEffect(newPart);
-                        overlayTranscript.dataset.fullText += newPart;
+                        // WORD BY WORD EFFECT (Instantáneo pero animado)
+                        appendWordMark(newPart);
+
+                        // Actualizar puntero de texto mostrado
+                        overlayTranscript.dataset.fullText = combinedText;
                     }
                 }
+
+                // Actualizar Stats en Tiempo Real
+                updateStats(fullTranscript);
 
                 updateProcessButton();
             };
 
-            // Función recursiva para efecto máquina de escribir
-            function typeWriterEffect(text) {
+            // Función para añadir texto palabra por palabra con animación
+            function appendWordMark(text) {
                 if (!text) return;
-                let i = 0;
-                const speed = 30; // ms por letra
 
-                function type() {
-                    if (i < text.length) {
-                        // Si el texto es muy largo, recortamos el inicio visualmente (scrolling)
-                        if (overlayTranscript.innerText.length > 800) {
-                            overlayTranscript.innerText = "..." + overlayTranscript.innerText.slice(-800);
-                        }
+                // Si es el primer texto real, limpiamos el placeholder
+                if (overlayTranscript.innerText.includes("Esperando voz...")) {
+                    overlayTranscript.innerHTML = "";
+                }
 
-                        overlayTranscript.innerText += text.charAt(i);
-                        i++;
-                        setTimeout(type, speed);
+                // Recortar historial visual si es muy largo para rendimiento
+                if (overlayTranscript.childElementCount > 100) {
+                    // Remover los primeros 10 elementos
+                    for (let k = 0; k < 10; k++) {
+                        if (overlayTranscript.firstChild) overlayTranscript.removeChild(overlayTranscript.firstChild);
                     }
                 }
-                type();
+
+                // Creamos un span para el nuevo fragmento
+                // Si el fragmento trae espacios, intentamos respetar la estructura de palabras
+                // Pero lo más simple y robusto es meter el chunk entero en un span con fade-in
+                const span = document.createElement('span');
+                span.innerText = text;
+                span.className = "animate-in fade-in zoom-in-95 duration-300 inline-block"; // Tailwind animate
+
+                overlayTranscript.appendChild(span);
+
+                // Auto-scroll al fondo
+                overlayTranscript.scrollTop = overlayTranscript.scrollHeight;
+            }
+
+            // --- ESTADÍSTICAS ---
+            function updateStats(text) {
+                const now = Date.now();
+                const diffMs = now - (startTime || now);
+                const diffMin = diffMs / 60000;
+
+                // Words
+                const words = text ? text.trim().split(/\s+/).length : 0;
+                statWords.innerText = words;
+
+                // Chars
+                const chars = text ? text.length : 0;
+                statChars.innerText = chars;
+
+                // WPM
+                // Evitamos división por cero o valores locos al inicio
+                if (diffMin > 0.01) {
+                    const wpm = Math.round(words / diffMin);
+                    statWPM.innerText = wpm;
+                } else {
+                    statWPM.innerText = "0";
+                }
             }
 
             // --- LÓGICA DE GRABACIÓN INFINITA ---
@@ -400,6 +523,10 @@
                 const timeStr = `${hours}:${minutes}:${seconds}`;
                 timeText.innerText = timeStr;
                 overlayTimeText.innerText = timeStr;
+                statTime.innerText = `${minutes}:${seconds}`; // Time simple en stats
+
+                // Actualizar WPM cada segundo también, por si el tiempo pasa sin palabras
+                updateStats(fullTranscript);
             }, 1000);
         }
 
@@ -432,9 +559,20 @@
                 setupVisualizer(stream);
 
                 isRecording = true;
-                fullTranscript = '';
-                committedTranscript = '';
-                transcriptDisplay.innerText = 'Escuchando...';
+                // SOLO BORRAMOS SI NO ESTAMOS RECUPERANDO
+                if (!fullTranscript) {
+                    fullTranscript = '';
+                    committedTranscript = '';
+                }
+                // Si recuperamos, committed debe sincronizarse para que no se duplique
+                if (fullTranscript && !committedTranscript) {
+                    committedTranscript = fullTranscript;
+                }
+
+                transcriptDisplay.innerText = fullTranscript || 'Escuchando...';
+
+                // Iniciar Auto-Save
+                startAutoSave();
 
                 // UI Visuals
                 toggleBtn.classList.remove('bg-black', 'border-slate-100');
@@ -517,6 +655,7 @@
 
             // Desactivar Watchdog
             if (watchdogTimer) clearInterval(watchdogTimer);
+            if (autoSaveIntervalId) clearInterval(autoSaveIntervalId); // Stop autosave
             watchdogTimer = null;
             recognitionActive = false;
 
@@ -545,6 +684,90 @@
         }
 
         // --- SISTEMA DE VISUALIZACIÓN DE AUDIO ---
+        // --- AUTO-SAVE & RECOVERY SYSTEM ---
+        const AUTO_SAVE_KEY = 'plaud_autosave_v1';
+        let autoSaveIntervalId = null;
+
+        function startAutoSave() {
+            if (autoSaveIntervalId) clearInterval(autoSaveIntervalId);
+            autoSaveIntervalId = setInterval(() => {
+                if (isRecording && fullTranscript.length > 10) {
+                    saveToLocal();
+                }
+            }, 60000); // Guardar cada 1 minuto (user pidió "cada pocos minutos")
+        }
+
+        function saveToLocal() {
+            const data = {
+                transcript: fullTranscript,
+                subject: subjectSelect.value,
+                timestamp: Date.now(),
+                durationAdd: (Date.now() - startTime) // Para sumar al recuperar
+            };
+            localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(data));
+            console.log("Auto-saved session.");
+        }
+
+        function checkRecovery() {
+            const savedRaw = localStorage.getItem(AUTO_SAVE_KEY);
+            if (!savedRaw) return;
+
+            try {
+                const saved = JSON.parse(savedRaw);
+                const now = Date.now();
+                const diffMins = (now - saved.timestamp) / 60000;
+
+                // Regla: Menos de 10 mins desde el último guardado
+                if (diffMins < 10) {
+                    // Mostrar Botón de recuperación
+                    showRecoveryUI(saved);
+                }
+            } catch (e) {
+                console.error("Error reading autosave", e);
+            }
+        }
+
+        function showRecoveryUI(savedData) {
+            // Creamos un aviso bonito
+            const alertDiv = document.createElement('div');
+            alertDiv.className = "fixed bottom-4 right-4 bg-white border-l-4 border-indigo-500 shadow-2xl p-4 rounded-r z-[60] animate-in fade-in slide-in-from-bottom-5 duration-500 flex flex-col gap-2 max-w-sm";
+            alertDiv.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h4 class="font-bold text-slate-800 text-sm">Sesión Encontrada</h4>
+                        <p class="text-xs text-slate-500 mt-1">Hay una grabación reciente de <b>${savedData.subject}</b> (${Math.round(savedData.transcript.length / 5)} palabras).</p>
+                        <p class="text-[10px] text-slate-400 mt-1">Hace ${Math.floor((Date.now() - savedData.timestamp) / 60000)} minutos</p>
+                    </div>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+                </div>
+                <button id="recoverBtnAction" class="bg-indigo-600 text-white text-xs font-bold py-2 px-3 rounded hover:bg-indigo-700 transition">
+                    Recuperar y Continuar
+                </button>
+            `;
+            document.body.appendChild(alertDiv);
+
+            document.getElementById('recoverBtnAction').onclick = () => {
+                // Restaurar estado
+                subjectSelect.value = savedData.subject;
+                fullTranscript = savedData.transcript;
+                committedTranscript = savedData.transcript;
+
+                // Actualizar UI
+                transcriptDisplay.innerText = "..." + fullTranscript.slice(-300);
+                updateStats(fullTranscript); // de la función anterior
+                alertDiv.remove();
+
+                // Limpiar storage para no volver a pedirlo
+                // localStorage.removeItem(AUTO_SAVE_KEY); 
+                // Mejor NO borrarlo por si recarga de nuevo por error
+
+                alert("Sesión recuperada. Pulsa el micrófono para continuar grabando.");
+            };
+        }
+
+        // Check on load
+        checkRecovery();
+
         function setupVisualizer(stream) {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             analyser = audioContext.createAnalyser();
@@ -634,12 +857,21 @@
                     subject: subject,
                     transcript: fullTranscript,
                     timestamp: Date.now(),
-                    // Inicializamos campos vacíos para que ver_resumenes sepa que debe generarlos
+                    // Stats
+                    durationSeconds: Math.floor((Date.now() - startTime) / 1000),
+                    wordCount: fullTranscript.trim().split(/\s+/).length,
+                    charCount: fullTranscript.length,
+                    wpm: parseInt(document.getElementById('statWPM').innerText) || 0,
+
+                    // Inicializamos campos vacíos
                     summary: null,
                     keyPoints: null,
                     flashcards: null,
                     quiz: null
                 });
+
+                // Limpiamos el autosave on success save
+                localStorage.removeItem(AUTO_SAVE_KEY);
 
                 alert("¡Grabación guardada! Ve a 'Ver Resúmenes' para generar el contenido con IA.");
                 window.location.href = "ver_resumenes.html";

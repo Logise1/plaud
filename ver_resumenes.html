@@ -42,6 +42,12 @@
             background-size: 1000px 100%;
         }
     </style>
+    </style>
+    <!-- Mermaid JS for Mindmaps -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
+    </script>
 </head>
 
 <body class="bg-slate-50 text-slate-800 min-h-screen font-sans">
@@ -104,14 +110,41 @@
                         <span id="detailText">Cargando...</span>
                     </h1>
                     <p id="detailDate" class="text-slate-500 text-sm font-mono mt-1 ml-11">Fecha</p>
+
+                    <!-- Stats Display -->
+                    <div id="noteStats"
+                        class="flex flex-wrap gap-2 md:gap-4 mt-3 ml-11 text-xs md:text-sm text-slate-500 font-mono">
+                        <span class="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded border border-slate-200"
+                            title="Duración">
+                            <i class="far fa-clock text-slate-400"></i> <span id="statDisplayTime">--:--</span>
+                        </span>
+                        <span class="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded border border-slate-200"
+                            title="Velocidad">
+                            <i class="fas fa-bolt text-indigo-400"></i> <span id="statDisplayWpm">0</span> WPM
+                        </span>
+                        <span class="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded border border-slate-200"
+                            title="Palabras Totales">
+                            <i class="fas fa-align-left text-emerald-500"></i> <span id="statDisplayWords">0</span>
+                            palabras
+                        </span>
+                    </div>
                 </div>
-                <div class="flex bg-slate-100 p-1 rounded-lg">
+                <div class="flex flex-wrap bg-slate-100 p-1 rounded-lg gap-1">
                     <button onclick="switchTab('summary')" id="btn-summary"
-                        class="tab-btn px-4 py-2 rounded-md text-sm font-medium transition-all">Resumen</button>
+                        class="tab-btn px-3 py-2 rounded-md text-xs font-medium transition-all">Resumen</button>
                     <button onclick="switchTab('flashcards')" id="btn-flashcards"
-                        class="tab-btn px-4 py-2 rounded-md text-sm font-medium transition-all text-slate-500 hover:text-slate-700">Flashcards</button>
+                        class="tab-btn px-3 py-2 rounded-md text-xs font-medium transition-all text-slate-500 hover:text-slate-700">Cards</button>
                     <button onclick="switchTab('quiz')" id="btn-quiz"
-                        class="tab-btn px-4 py-2 rounded-md text-sm font-medium transition-all text-slate-500 hover:text-slate-700">Quiz</button>
+                        class="tab-btn px-3 py-2 rounded-md text-xs font-medium transition-all text-slate-500 hover:text-slate-700">Quiz</button>
+                    <!-- BETA Features -->
+                    <button onclick="switchTab('mindmap')" id="btn-mindmap"
+                        class="tab-btn px-3 py-2 rounded-md text-xs font-medium transition-all text-slate-500 hover:text-slate-700 flex items-center gap-1">
+                        Mapa <span class="bg-indigo-600 text-white text-[9px] px-1 rounded font-bold">BETA</span>
+                    </button>
+                    <button onclick="switchTab('presentation')" id="btn-presentation"
+                        class="tab-btn px-3 py-2 rounded-md text-xs font-medium transition-all text-slate-500 hover:text-slate-700 flex items-center gap-1">
+                        Slides <span class="bg-indigo-600 text-white text-[9px] px-1 rounded font-bold">BETA</span>
+                    </button>
                 </div>
             </div>
 
@@ -341,6 +374,84 @@
                     </div>
                 </div>
 
+                <!-- TAB: MIND MAP (BETA) -->
+                <div id="mindmapTab" class="hidden">
+                    <!-- Estado: Vacio / Generar -->
+                    <div id="mindmapEmptyState"
+                        class="w-full text-center py-12 bg-white rounded-xl border border-dashed border-slate-300">
+                        <div class="mb-4 text-indigo-100">
+                            <i class="fas fa-project-diagram text-6xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-800 mb-2">Mapa Mental (BETA)</h3>
+                        <p class="text-slate-500 mb-6 px-6">Visualiza la estructura de la clase con un diagrama generado
+                            por IA.</p>
+                        <button onclick="generateContent('mindmap')"
+                            class="bg-black text-white px-6 py-3 rounded-lg font-bold hover:bg-gray-800 transition-all shadow-lg">
+                            Generar Mapa
+                        </button>
+                    </div>
+
+                    <!-- Estado: Cargando -->
+                    <div id="mindmapLoading"
+                        class="hidden flex flex-col items-center justify-center h-64 bg-slate-50 rounded-xl border border-slate-200">
+                        <i class="fas fa-circle-notch fa-spin text-indigo-500 text-3xl mb-4"></i>
+                        <p class="text-slate-500">Diseñando estructura...</p>
+                    </div>
+
+                    <!-- Estado: Contenido -->
+                    <div id="mindmapContent"
+                        class="hidden bg-white p-4 rounded-xl border border-slate-200 overflow-x-auto">
+                        <div id="mermaidContainer" class="flex justify-center min-w-[600px]"></div>
+                        <div class="text-center mt-4">
+                            <p class="text-xs text-slate-400">Generado con Mermaid.js</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: PRESENTATION (BETA) -->
+                <div id="presentationTab" class="hidden">
+                    <!-- Estado: Vacio / Generar -->
+                    <div id="presentationEmptyState"
+                        class="w-full text-center py-12 bg-white rounded-xl border border-dashed border-slate-300">
+                        <div class="mb-4 text-indigo-100">
+                            <i class="fas fa-chalkboard-teacher text-6xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-800 mb-2">Crear Presentación (BETA)</h3>
+                        <p class="text-slate-500 mb-6 px-6">Genera diapositivas clave para repasar o enseñar el tema.
+                        </p>
+
+                        <div class="px-8 mb-6 max-w-xs mx-auto">
+                            <label class="block text-sm font-medium text-slate-700 mb-2 text-left">Nº
+                                Diapositivas</label>
+                            <input type="range" id="slidesAmount" min="3" max="8" value="5"
+                                class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                oninput="document.getElementById('slideVal').innerText = this.value">
+                            <div class="flex justify-between text-xs text-slate-400 mt-1">
+                                <span>3</span>
+                                <span id="slideVal" class="font-bold text-indigo-600">5</span>
+                                <span>8</span>
+                            </div>
+                        </div>
+
+                        <button onclick="generateContent('presentation')"
+                            class="bg-black text-white px-6 py-3 rounded-lg font-bold hover:bg-gray-800 transition-all shadow-lg">
+                            Generar Slides
+                        </button>
+                    </div>
+
+                    <!-- Estado: Cargando -->
+                    <div id="presentationLoading"
+                        class="hidden flex flex-col items-center justify-center h-64 bg-slate-50 rounded-xl border border-slate-200">
+                        <i class="fas fa-circle-notch fa-spin text-indigo-500 text-3xl mb-4"></i>
+                        <p class="text-slate-500">Redactando diapositivas...</p>
+                    </div>
+
+                    <!-- Estado: Contenido -->
+                    <div id="presentationContent" class="hidden space-y-8">
+                        <div id="slidesContainer" class="space-y-6"></div>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -502,6 +613,19 @@
                 generateTitle(note);
             }
 
+            // --- POPULATE STATS ---
+            const words = note.wordCount || (note.transcript ? note.transcript.trim().split(/\s+/).length : 0);
+            const sec = note.durationSeconds || 0;
+            // Si no hay wpm guardado, calculamos aproximado si hay duración, sino 0
+            const wpm = note.wpm || (sec > 0 ? Math.round(words / (sec / 60)) : 0);
+
+            const minutes = Math.floor(sec / 60).toString().padStart(2, '0');
+            const seconds = (sec % 60).toString().padStart(2, '0');
+
+            document.getElementById('statDisplayTime').innerText = sec > 0 ? `${minutes}:${seconds}` : "--:--";
+            document.getElementById('statDisplayWpm').innerText = wpm;
+            document.getElementById('statDisplayWords').innerText = words;
+
             // Resetear tabs
             switchTab('summary');
         };
@@ -511,7 +635,7 @@
             const activeClass = "bg-white text-indigo-600 shadow-sm".split(" ");
             const inactiveClass = "text-slate-500 hover:text-slate-700".split(" ");
 
-            ['summary', 'flashcards', 'quiz'].forEach(t => {
+            ['summary', 'flashcards', 'quiz', 'mindmap', 'presentation'].forEach(t => {
                 const btn = document.getElementById(`btn-${t}`);
                 if (t === tabName) {
                     btn.classList.remove(...inactiveClass);
@@ -523,9 +647,10 @@
             });
 
             // Visibilidad Contenido
-            document.getElementById('summaryTab').classList.add('hidden');
             document.getElementById('flashcardsTab').classList.add('hidden');
             document.getElementById('quizTab').classList.add('hidden');
+            document.getElementById('mindmapTab').classList.add('hidden');
+            document.getElementById('presentationTab').classList.add('hidden');
 
             if (tabName === 'summary') {
                 document.getElementById('summaryTab').classList.remove('hidden');
@@ -537,6 +662,12 @@
             } else if (tabName === 'quiz') {
                 document.getElementById('quizTab').classList.remove('hidden');
                 resetQuiz();
+            } else if (tabName === 'mindmap') {
+                document.getElementById('mindmapTab').classList.remove('hidden');
+                loadMindmap();
+            } else if (tabName === 'presentation') {
+                document.getElementById('presentationTab').classList.remove('hidden');
+                loadPresentation();
             }
         };
 
@@ -641,6 +772,57 @@
                 document.getElementById('quizContent').classList.add('hidden');
             }
         };
+
+        // --- MIND MAP LOGIC ---
+        function loadMindmap(mapOverride = null) {
+            const mapCode = mapOverride || localData.mindmap || currentNote.mindmap;
+            if (mapCode) {
+                document.getElementById('mindmapEmptyState').classList.add('hidden');
+                document.getElementById('mindmapContent').classList.remove('hidden');
+
+                const container = document.getElementById('mermaidContainer');
+                container.innerHTML = `<pre class="mermaid">${mapCode}</pre>`;
+                try {
+                    mermaid.init(undefined, container.querySelectorAll('.mermaid'));
+                } catch (e) { console.error("Mermaid error", e); }
+            } else {
+                document.getElementById('mindmapEmptyState').classList.remove('hidden');
+                document.getElementById('mindmapContent').classList.add('hidden');
+            }
+        }
+
+        // --- PRESENTATION LOGIC ---
+        function loadPresentation(slidesOverride = null) {
+            const slides = slidesOverride || localData.presentation || currentNote.presentation;
+            if (slides && slides.length > 0) {
+                document.getElementById('presentationEmptyState').classList.add('hidden');
+                document.getElementById('presentationContent').classList.remove('hidden');
+
+                const container = document.getElementById('slidesContainer');
+                container.innerHTML = '';
+
+                slides.forEach((slide, idx) => {
+                    const slideDiv = document.createElement('div');
+                    slideDiv.className = "bg-white p-6 md:p-8 rounded-xl shadow-lg border border-slate-200 aspect-video flex flex-col justify-center relative overflow-hidden";
+
+                    // Background decoration
+                    slideDiv.innerHTML = `
+                        <div class="absolute top-0 right-0 p-4 opacity-10 text-6xl text-indigo-500 font-bold font-serif">
+                            ${idx + 1}
+                        </div>
+                        <h2 class="text-2xl md:text-3xl font-bold text-slate-800 mb-6 border-b-2 border-indigo-500 pb-2 w-fit pr-8">${slide.title}</h2>
+                        <ul class="space-y-3 text-lg text-slate-600 list-disc pl-6 marker:text-indigo-400">
+                            ${slide.points.map(p => `<li>${p}</li>`).join('')}
+                        </ul>
+                     `;
+                    container.appendChild(slideDiv);
+                });
+
+            } else {
+                document.getElementById('presentationEmptyState').classList.remove('hidden');
+                document.getElementById('presentationContent').classList.add('hidden');
+            }
+        }
 
         function loadQuizQuestion(quizOverride = null) {
             const quiz = quizOverride || localData.quiz || currentNote.quiz || [];
@@ -795,8 +977,31 @@
                     Genera un examen tipo test de ${amount} preguntas con dificultad ${difficulty} sobre ${subject}.
                     Formato JSON:
                     {
-                        "quiz": [
-                            {"question": "Pregunta", "options": ["A", "B", "C", "D"], "correctAnswer": 0} // correctAnswer es index 0-3
+                        ]
+                    }
+                    Transcripción: "${contextForAI}"
+                `;
+            } else if (type === 'mindmap') {
+                jsonKey = "mindmap_data";
+                prompt = `
+                    Genera un diagrama Mermaid.js (graph TD) que represente la estructura de esta clase.
+                    El código debe ser válido para incrustar.
+                    Formato JSON:
+                    {
+                        "mermaidCode": "graph TD; A[Tema Principal] --> B[Subtema 1]; B --> C[Detalle];"
+                    }
+                    La transcripción es: "${contextForAI}"
+                `;
+            } else if (type === 'presentation') {
+                const amount = document.getElementById('slidesAmount').value;
+                jsonKey = "presentation_data";
+                prompt = `
+                    Genera el contenido para una presentación de ${amount} diapositivas sobre esta clase.
+                    Formato JSON:
+                    {
+                        "slides": [
+                            {"title": "Título Slide 1", "points": ["Punto clave 1", "Punto clave 2"]},
+                            {"title": "Título Slide 2", "points": ["..."]}
                         ]
                     }
                     Transcripción: "${contextForAI}"
@@ -804,62 +1009,78 @@
             }
 
             try {
+                // --- LLAMADA A MISTRAL ---
                 const response = await fetch(API_ENDPOINT, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${MISTRAL_API_KEY}`
-                    },
-                    body: JSON.stringify({
-                        model: "mistral-medium",
-                        messages: [{ role: "user", content: prompt }],
-                        response_format: { type: "json_object" }
-                    })
+                    method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${MISTRAL_API_KEY}` },
+                    body: JSON.stringify({ model: "mistral-medium", messages: [{ role: "user", content: prompt }], response_format: { type: "json_object" } })
                 });
 
-                if (!response.ok) throw new Error("Mistral API Error");
                 const data = await response.json();
                 const content = JSON.parse(data.choices[0].message.content);
 
-                // --- LOGICA DE GUARDADO ---
+                // --- PROCESAMIENTO RESULTADO ---
+                let finalData = null;
+
                 if (type === 'summary') {
-                    // Resumen VA A FIREBASE
-                    const updates = {};
-                    updates[`/public_notes/${currentNote.id}/summary`] = content.summary;
-                    updates[`/public_notes/${currentNote.id}/keyPoints`] = content.keyPoints;
-                    await update(ref(db), updates);
-
-                    // Actualizar estado local para visualizacion
-                    currentNote.summary = content.summary;
-                    currentNote.keyPoints = content.keyPoints;
-                    loadSummary();
-
-                } else if (type === 'flashcards' || type === 'quiz') {
-                    // Flashcards/Quiz VAN A LOCALSTORAGE
-                    if (!localData) localData = {};
-
-                    if (type === 'flashcards') {
-                        localData.flashcards = content.flashcards;
-                        loadFlashcards();
-                    } else if (type === 'quiz') {
-                        localData.quiz = content.quiz;
-                        resetQuiz();
-                    }
-
-                    // Guardar en dispositivo
-                    localStorage.setItem(`plaud_local_${currentNote.id}`, JSON.stringify(localData));
-
-                    // (Opcional) Refrescar la lista de clases para mostrar el icono de local
-                    renderClassList(currentNote.subject);
+                    finalData = { summary: content.summary, keyPoints: content.keyPoints };
+                } else if (type === 'flashcards') {
+                    finalData = { flashcards: content.flashcards };
+                } else if (type === 'quiz') {
+                    finalData = { quiz: content.quiz };
+                } else if (type === 'mindmap') {
+                    // Limpieza básica de código mermaid por si la AI mete markdown ```
+                    let code = content.mermaidCode;
+                    code = code.replace(/```mermaid/g, '').replace(/```/g, '').trim();
+                    finalData = { mindmap: code };
+                } else if (type === 'presentation') {
+                    finalData = { presentation: content.slides };
                 }
 
-            } catch (e) {
-                console.error(e);
-                alert("Error generando contenido: " + e.message);
+                // --- GUARDAR (Local + Cloud) ---
+                // 1. Guardar en LocalStorage para acceso rápido
+                localData = { ...localData, ...finalData };
+                localStorage.setItem(`plaud_local_${currentNote.id}`, JSON.stringify(localData));
+
+                // 2. Guardar en Firebase
+                const updates = {};
+                if (finalData.summary) {
+                    updates[`/public_notes/${currentNote.id}/summary`] = finalData.summary;
+                    updates[`/public_notes/${currentNote.id}/keyPoints`] = finalData.keyPoints;
+                    // Update currentNote object in memory
+                    currentNote.summary = finalData.summary;
+                    currentNote.keyPoints = finalData.keyPoints;
+                }
+                if (finalData.flashcards) {
+                    updates[`/public_notes/${currentNote.id}/flashcards`] = finalData.flashcards;
+                    currentNote.flashcards = finalData.flashcards;
+                }
+                if (finalData.quiz) {
+                    updates[`/public_notes/${currentNote.id}/quiz`] = finalData.quiz;
+                    currentNote.quiz = finalData.quiz;
+                }
+                if (finalData.mindmap) {
+                    updates[`/public_notes/${currentNote.id}/mindmap`] = finalData.mindmap;
+                    currentNote.mindmap = finalData.mindmap;
+                }
+                if (finalData.presentation) {
+                    updates[`/public_notes/${currentNote.id}/presentation`] = finalData.presentation;
+                    currentNote.presentation = finalData.presentation;
+                }
+
+                await update(ref(db), updates);
+
+                // UI Refresh
+                document.getElementById(`${type}Loading`).classList.add('hidden');
+                if (type === 'summary') loadSummary();
+                if (type === 'flashcards') loadFlashcards();
+                if (type === 'quiz') resetQuiz();
+                if (type === 'mindmap') loadMindmap(finalData.mindmap);
+                if (type === 'presentation') loadPresentation(finalData.presentation);
+
+            } catch (error) {
+                console.error("Error generando contenido (pre-fetch):", error);
                 document.getElementById(`${type}Loading`).classList.add('hidden');
                 document.getElementById(`${type}EmptyState`).classList.remove('hidden');
-            } finally {
-                document.getElementById(`${type}Loading`).classList.add('hidden');
             }
         };
     </script>
