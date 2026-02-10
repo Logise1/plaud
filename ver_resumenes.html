@@ -1304,11 +1304,14 @@
             let prompt = "";
             let jsonKey = "";
 
+            const commonInstruction = "IMPORTANTE: Ignora completamente cualquier interrupción de la clase (regaños, alumnos hablando, anuncios administrativos, disciplina, chistes fuera de lugar, preguntas irrelevantes). Céntrate ÚNICAMENTE en el contenido educativo explicado por el profesor.";
+
             if (type === 'summary') {
                 jsonKey = "summary_data";
                 prompt = `
                     Actúa como un profesor experto de ${subject}.
                     Analiza la siguiente transcripción.
+                    ${commonInstruction}
                     Genera un JSON con:
                     {
                         "summary": "Resumen detallado de la clase (200 palabras)",
@@ -1321,6 +1324,7 @@
                 jsonKey = "flashcards_data";
                 prompt = `
                     Genera ${amount} flashcards de estudio para la materia ${subject} basadas en el texto.
+                    ${commonInstruction}
                     Formato JSON:
                     {
                         "flashcards": [
@@ -1335,8 +1339,11 @@
                 jsonKey = "quiz_data";
                 prompt = `
                     Genera un examen tipo test de ${amount} preguntas con dificultad ${difficulty} sobre ${subject}.
+                    ${commonInstruction}
                     Formato JSON:
                     {
+                        "quiz": [
+                            {"question": "¿...?", "options": ["A", "B", "C"], "correctAnswer": 0}
                         ]
                     }
                     Transcripción: "${contextForAI}"
@@ -1345,6 +1352,7 @@
                 jsonKey = "mindmap_data";
                 prompt = `
                     Genera un diagrama de mapa mental en formato Mermaid mindmap (más compacto y radial).
+                    ${commonInstruction}
                     Usa la sintaxis: mindmap\\n  root((Tema Central))\\n    Rama1\\n      Detalle1\\n      Detalle2\\n    Rama2\\n      Detalle3
                     
                     IMPORTANTE: Usa el formato mindmap, NO graph TD.
@@ -1360,6 +1368,7 @@
                 jsonKey = "presentation_data";
                 prompt = `
                     Genera el contenido para una presentación de ${amount} diapositivas sobre esta clase.
+                    ${commonInstruction}
                     Formato JSON:
                     {
                         "slides": [

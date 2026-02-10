@@ -253,9 +253,9 @@
                 </div>
 
                 <div id="overlayTranscript"
-                    class="text-3xl md:text-5xl leading-tight text-white font-medium text-center h-full overflow-y-auto flex flex-col justify-end transition-all px-4 pb-12 mask-image-b">
+                    class="text-xl md:text-2xl leading-relaxed text-slate-200 text-left h-full overflow-y-auto block transition-all px-8 pb-32 pt-10 whitespace-pre-wrap">
                     <!-- Text will be injected here -->
-                    <span class="opacity-50 italic text-2xl">Esperando voz...</span>
+                    <span class="opacity-50 italic text-xl">Esperando voz...</span>
                 </div>
             </div>
         </div>
@@ -319,6 +319,7 @@
         let isRecording = false;
         let fullTranscript = '';
         let committedTranscript = '';
+        let globalCombinedTranscript = ''; // TEXTO REAL-TIME PARA LA IA
         let recognition = null;
         let startTime = null;
         let timerInterval = null;
@@ -364,13 +365,10 @@
                 // Actualizamos el transcript completo con lo confirmado previamente + lo nuevo de esta sesión
                 fullTranscript = committedTranscript + currentSessionFinal;
 
-                // --- LÓGICA DE VISUALIZACIÓN LIMITADA (300 CHARS) ---
+                // --- VISUALIZACIÓN COMPLETA (Sin límite) ---
                 const combinedText = fullTranscript + interimTranscript;
-                if (combinedText.length > 300) {
-                    transcriptDisplay.innerText = "..." + combinedText.slice(-300);
-                } else {
-                    transcriptDisplay.innerText = combinedText || "...escuchando...";
-                }
+                globalCombinedTranscript = combinedText; // ACTUALIZAR VARIABLE GLOBAL PARA IA
+                transcriptDisplay.innerText = combinedText || "...escuchando...";
 
                 // Overlay Update (Efecto Tipo Máquina de Escribir)
                 if (combinedText) {
@@ -398,9 +396,11 @@
                             overlayTranscript.innerText !== "Esperando voz...") {
                             newPart = ' ' + newPart;
                             currentDisplayed += ' ';
-                            // No actualizamos dataset aquí para mantener sync pura con fullTranscript, 
                             // pero visualmente lo necesitamos
                         }
+
+                        // CHECK INTERRUPTIONS ON NEW TEXT
+                        checkInterruptionKeywords(newPart);
 
                         // WORD BY WORD EFFECT (Instantáneo pero animado)
                         appendWordMark(newPart);
@@ -425,10 +425,11 @@
                     overlayTranscript.innerHTML = "";
                 }
 
-                // Recortar historial visual si es muy largo para rendimiento
-                if (overlayTranscript.childElementCount > 100) {
-                    // Remover los primeros 10 elementos
-                    for (let k = 0; k < 10; k++) {
+                // Recortar historial visual (Aumentado a 20k para permitir reconstrucción limpia al final)
+                const MAX_SPANS = 20000;
+                if (overlayTranscript.childElementCount > MAX_SPANS) {
+                    // Remover los primeros 100 elementos
+                    for (let k = 0; k < 100; k++) {
                         if (overlayTranscript.firstChild) overlayTranscript.removeChild(overlayTranscript.firstChild);
                     }
                 }
@@ -440,35 +441,19 @@
                 span.innerText = text;
                 span.className = "animate-in fade-in zoom-in-95 duration-300 inline-block"; // Tailwind animate
 
+                // APLICAR TACHADO SI ESTAMOS EN INTERRUPCIÓN
+                if (isInterruptionActive) {
+                    span.classList.add('line-through', 'text-red-500', 'decoration-2', 'decoration-red-500');
+                    span.dataset.interrupted = "true";
+                }
+
                 overlayTranscript.appendChild(span);
 
                 // Auto-scroll al fondo
                 overlayTranscript.scrollTop = overlayTranscript.scrollHeight;
             }
 
-            // --- ESTADÍSTICAS ---
-            function updateStats(text) {
-                const now = Date.now();
-                const diffMs = now - (startTime || now);
-                const diffMin = diffMs / 60000;
 
-                // Words
-                const words = text ? text.trim().split(/\s+/).length : 0;
-                statWords.innerText = words;
-
-                // Chars
-                const chars = text ? text.length : 0;
-                statChars.innerText = chars;
-
-                // WPM
-                // Evitamos división por cero o valores locos al inicio
-                if (diffMin > 0.01) {
-                    const wpm = Math.round(words / diffMin);
-                    statWPM.innerText = wpm;
-                } else {
-                    statWPM.innerText = "0";
-                }
-            }
 
             // --- LÓGICA DE GRABACIÓN INFINITA ---
             // Si el navegador corta la grabación por silencio o tiempo, la reiniciamos inmediatamente
@@ -511,7 +496,156 @@
             alert("Tu navegador no soporta reconocimiento de voz. Por favor usa Google Chrome.");
         }
 
-        // --- TEMPORIZADOR ---
+        // --- ESTADÍSTICAS (Movido a scope global) ---
+        function updateStats(text) {
+            const now = Date.now();
+            const diffMs = now - (startTime || now);
+            const diffMin = diffMs / 60000;
+
+            // Words
+            const words = text ? text.trim().split(/\s+/).length : 0;
+            statWords.innerText = words;
+
+            // Chars
+            const chars = text ? text.length : 0;
+            statChars.innerText = chars;
+
+            // WPM
+            if (diffMin > 0.01) {
+                const wpm = Math.round(words / diffMin);
+                statWPM.innerText = wpm;
+            } else {
+                statWPM.innerText = "0";
+            }
+        }
+
+        // --- SISTEMA DE DETECCIÓN DE INTERRUPCIONES (MISTRAL AI) ---
+        let interruptionCheckInterval = null;
+        let isInterruptionActive = false;
+        let interruptionIndicator = null;
+        let interruptedContentParts = []; // Lista de textos a eliminar
+
+        function setupInterruptionUI() {
+            if (!interruptionIndicator) {
+                interruptionIndicator = document.createElement('div');
+                interruptionIndicator.id = 'interruptionIndicator';
+                interruptionIndicator.className = 'absolute top-24 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-6 py-2 rounded-full font-bold shadow-lg z-50 hidden flex items-center gap-2 animate-bounce';
+                interruptionIndicator.innerHTML = '<i class="fas fa-exclamation-circle"></i> Interrupción detectada';
+                document.body.appendChild(interruptionIndicator);
+            }
+        }
+        setupInterruptionUI();
+
+        function startInterruptionCheck() {
+            if (interruptionCheckInterval) clearInterval(interruptionCheckInterval);
+            interruptionCheckInterval = setInterval(checkInterruptionLogic, 10000); // Cada 10s
+        }
+
+        function stopInterruptionCheck() {
+            if (interruptionCheckInterval) clearInterval(interruptionCheckInterval);
+            interruptionIndicator.classList.add('hidden');
+            isInterruptionActive = false; // Reset safe
+        }
+
+
+
+        // --- SISTEMA DE DETECCIÓN DE INTERRUPCIONES (KEYWORDS LOCAL) ---
+        // SIN IA, MUCHO MÁS RÁPIDO Y GRATIS
+        const INTERRUPT_START_KW = [
+            "guarda el móvil", "guarda el celular", "dame el móvil", "apaga el móvil",
+            "silencio por favor", "hacé silencio", "callaos", "cállate", "cerrad la boca",
+            "sal de clase", "sal del aula", "vete fuera", "te vas fuera",
+            "deja de hablar", "no interrumpas", "estorbo", "molestar",
+            "basta ya", "lucía no se habla", "parad de hablar", "prestad atención ya"
+        ];
+
+        const INTERRUPT_END_KW = [
+            "seguimos", "continuamos", "volvemos al tema", "retomamos",
+            "como decía", "como estaba diciendo", "bueno pues",
+            "bien", "vale pues", "entonces", "por dónde iba",
+            "venga", "vamos a seguir", "prestad atención de nuevo",
+            "luego vuelves", "ya está", "ya pasó"
+        ];
+
+        function checkInterruptionKeywords(textChunk) {
+            if (!textChunk || textChunk.length < 3) return;
+            const lowerText = textChunk.toLowerCase();
+
+            // MODO: DETECTAR INICIO
+            if (!isInterruptionActive) {
+                for (const kw of INTERRUPT_START_KW) {
+                    if (lowerText.includes(kw)) {
+                        console.log("Interrupción detectada por KW:", kw);
+                        isInterruptionActive = true;
+                        interruptionIndicator.classList.remove('hidden');
+
+                        // Tachamos visualmente la frase gatillo
+                        applyStrikethrough(kw, true);
+                        return; // Ya activamos, salimos
+                    }
+                }
+            }
+            // MODO: DETECTAR FIN
+            else {
+                for (const kw of INTERRUPT_END_KW) {
+                    if (lowerText.includes(kw)) {
+                        console.log("Fin de interrupción por KW:", kw);
+
+                        // Encontramos el fin, dejamos de tachar A PARTIR DE AQUÍ
+                        applyStrikethrough(kw, false);
+
+                        isInterruptionActive = false;
+                        interruptionIndicator.classList.add('hidden');
+                        return;
+                    }
+                }
+            }
+        }
+
+
+
+        // Función para buscar visualmente y tachar
+        function applyStrikethrough(keyWords, isStart) {
+            // Limpiar comillas y espacios
+            const target = keyWords.replace(/["']/g, "").trim().toLowerCase();
+            if (target.length < 3) return;
+
+            const spans = Array.from(overlayTranscript.querySelectorAll('span'));
+            // Iterar desde el final hacia atrás para encontrar la coincidencia más reciente
+            let foundIndex = -1;
+
+            // Construir texto de spans para buscar
+            // Hacemos una búsqueda simple en los últimos 50 spans
+            const searchLimit = Math.min(spans.length, 100);
+            const startIndex = spans.length - searchLimit;
+
+            for (let i = spans.length - 1; i >= startIndex; i--) {
+                const spanText = spans[i].innerText.toLowerCase();
+                // Check simple de coincidencia
+                if (target.includes(spanText.trim()) && spanText.trim().length > 1) {
+                    // Posible match, verificamos vecinos si es necesario
+                    foundIndex = i;
+                    break;
+                }
+            }
+
+            if (foundIndex !== -1) {
+                if (isStart) {
+                    // Tachar desde foundIndex hacia adelante
+                    for (let i = foundIndex; i < spans.length; i++) {
+                        spans[i].classList.add('line-through', 'text-red-500', 'decoration-2', 'decoration-red-500');
+                        spans[i].dataset.interrupted = "true";
+                    }
+                } else {
+                    // Es el FIN. La interrupción terminó en foundIndex.
+                    // Limpiamos tachado desde foundIndex en adelante.
+                    for (let i = foundIndex; i < spans.length; i++) {
+                        spans[i].classList.remove('line-through', 'text-red-500', 'decoration-2', 'decoration-red-500');
+                        delete spans[i].dataset.interrupted;
+                    }
+                }
+            }
+        }
         function startTimer() {
             startTime = Date.now();
             timeText.classList.remove('opacity-0');
@@ -611,6 +745,7 @@
                     }
                 }, 2000);
 
+                // startInterruptionCheck(); // YA NO USAMOS CHECK INTERVAL, ES EN TIEMPO REAL
                 startTimer();
                 updateProcessButton();
 
@@ -659,6 +794,7 @@
             watchdogTimer = null;
             recognitionActive = false;
 
+            stopInterruptionCheck(); // DETENER CHECK (Aunque ahora es pasivo, limpia estados)
             updateProcessButton();
         }
 
@@ -769,12 +905,24 @@
         checkRecovery();
 
         function setupVisualizer(stream) {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            analyser = audioContext.createAnalyser();
-            microphone = audioContext.createMediaStreamSource(stream);
-            microphone.connect(analyser);
+            try {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                // Si está suspendido, intentar reanudar
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume().catch(e => console.warn("No se pudo reanudar Audio:", e));
+                }
 
-            analyser.fftSize = 64; // Menos barras, más gruesas
+                analyser = audioContext.createAnalyser();
+                microphone = audioContext.createMediaStreamSource(stream);
+                microphone.connect(analyser);
+
+                analyser.fftSize = 64; // Menos barras, más gruesas
+            } catch (e) {
+                console.warn("Error iniciando Visualizer:", e);
+                return; // Salir sin bloquear
+            }
             const bufferLength = analyser.frequencyBinCount;
             const dataArray = new Uint8Array(bufferLength);
 
@@ -846,8 +994,34 @@
             loader.querySelector('p').innerText = "Subiendo audio transcrito a la nube...";
 
             const subject = subjectSelect.value;
-            // Guardamos el texto completo original
-            // Nota: fullTranscript ya contiene todo lo necesario gracias al fix anterior
+
+            // --- RECONSTRUCCIÓN DE TRANSCRIPT LIMPIO ---
+            // Reconstruimos el texto exacto desde los elementos visuales para respetar las interrupciones tachadas.
+            let cleanTranscript = "";
+            const spans = overlayTranscript.querySelectorAll('span');
+
+            if (spans.length > 0) {
+                // Si tenemos spans, usamos la reconstrucción precisa
+                spans.forEach(span => {
+                    // Ignoramos los tachados
+                    if (span.dataset.interrupted !== "true" && !span.classList.contains('line-through')) {
+                        cleanTranscript += span.innerText;
+                    }
+                });
+            }
+
+            // SAFETY CHECK: Detección de pérdida de datos
+            // Si el transcript limpio es sospechosamente corto (< 20% del original) y el original es largo,
+            // asumimos que falló la reconstrucción visual (bug "20 palabras") y usamos el original.
+            if (cleanTranscript.length < fullTranscript.length * 0.2 && fullTranscript.length > 100) {
+                console.warn("ADVERTENCIA: Fallo en reconstrucción visual. Usando transcript crudo.");
+                cleanTranscript = fullTranscript;
+            } else if (!cleanTranscript && fullTranscript) {
+                cleanTranscript = fullTranscript; // Fallback extremo
+            }
+
+            console.log("Transcript Original:", fullTranscript.length);
+            console.log("Transcript Limpio:", cleanTranscript.length);
 
             try {
                 // --- GUARDAR EN FIREBASE ---
@@ -855,12 +1029,15 @@
                 const newNoteRef = push(notesRef);
                 await set(newNoteRef, {
                     subject: subject,
-                    transcript: fullTranscript,
+                    transcript: cleanTranscript, // USAMOS EL LIMPIO
+                    originalTranscript: fullTranscript, // Guardamos backup por si acaso
                     timestamp: Date.now(),
                     // Stats
                     durationSeconds: Math.floor((Date.now() - startTime) / 1000),
-                    wordCount: fullTranscript.trim().split(/\s+/).length,
-                    charCount: fullTranscript.length,
+                    wordCount: cleanTranscript.trim().split(/\s+/).length,
+                    charCount: cleanTranscript.length,
+
+
                     wpm: parseInt(document.getElementById('statWPM').innerText) || 0,
 
                     // Inicializamos campos vacíos
