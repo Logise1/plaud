@@ -948,26 +948,179 @@
 
             const slide = window.currentSlides[window.currentSlideIndex];
             const viewport = document.getElementById('currentSlideViewport');
-
             const idx = window.currentSlideIndex;
             const total = window.currentSlides.length;
 
             // Update counter
             document.getElementById('slideCounterDisplay').innerText = `${idx + 1} / ${total}`;
 
-            // Render Slide
+            // Determinar Layout CSS
+            let layoutClasses = "flex flex-col justify-center h-full"; // Default center
+            let textClasses = "";
+            let imgContainerClasses = "";
+            let containerClasses = "h-full w-full relative z-10 flex gap-8 items-center";
+
+            if (slide.layout === 'left') {
+                // Texto Izquierda, Imagen Derecha
+                containerClasses += " flex-row";
+                textClasses = "w-1/2 text-left";
+                imgContainerClasses = "w-1/2 h-full flex items-center justify-center";
+            } else if (slide.layout === 'right') {
+                // Texto Derecha, Imagen Izquierda
+                containerClasses += " flex-row-reverse";
+                textClasses = "w-1/2 text-left"; // El texto sigue alineado a la izquierda para leibilidad, pero el bloque está a la derecha
+                imgContainerClasses = "w-1/2 h-full flex items-center justify-center";
+            } else {
+                // Center (Texto arriba/centro, imagen abajo/fondo)
+                containerClasses += " flex-col justify-center text-center";
+                textClasses = "w-full max-w-4xl mx-auto mb-8";
+                imgContainerClasses = "w-full flex-1 flex items-center justify-center min-h-[300px]";
+            }
+
+            // Render Slide Structure
             viewport.innerHTML = `
                 <div class="absolute top-0 right-0 p-8 opacity-10 text-9xl text-indigo-500 font-bold font-serif select-none pointer-events-none">
                     ${idx + 1}
                 </div>
-                <div class="z-10 animate-fade-in">
-                    <h2 class="text-3xl md:text-5xl font-bold text-slate-900 mb-8 border-b-4 border-indigo-500 pb-4 inline-block">${slide.title}</h2>
-                    <ul class="space-y-6 text-xl md:text-2xl text-slate-700 list-disc pl-8 marker:text-indigo-500">
-                        ${slide.points.map(p => `<li>${p}</li>`).join('')}
-                    </ul>
+                
+                <div class="${containerClasses}">
+                    <!-- TEXT SECTION -->
+                    <div class="${textClasses} animate-fade-in">
+                        <h2 class="text-3xl md:text-5xl font-bold text-slate-900 mb-6 border-b-4 border-indigo-500 pb-4 inline-block w-fit">${slide.title}</h2>
+                        <ul class="space-y-4 text-xl md:text-2xl text-slate-700 list-disc pl-8 marker:text-indigo-500 mb-2 ${slide.layout === 'center' ? 'text-left inline-block' : ''}">
+                            ${slide.points.map(p => `<li>${p}</li>`).join('')}
+                        </ul>
+                    </div>
+
+                    <!-- IMAGE SECTION -->
+                    <div class="${imgContainerClasses}">
+                        <div id="slide-image-wrapper-${idx}" class="relative w-full h-full max-h-[500px] flex flex-col items-center justify-center bg-slate-50 rounded-xl border border-slate-200 overflow-hidden shadow-sm group">
+                            <!-- Loading State -->
+                            <div id="slide-img-loader-${idx}" class="absolute inset-0 flex flex-col items-center justify-center z-20 bg-slate-50">
+                                <i class="fas fa-circle-notch fa-spin text-4xl text-indigo-500 mb-2"></i>
+                                <span class="text-xs text-slate-400 font-mono">Generando imagen AI...</span>
+                            </div>
+                            
+                            <!-- Image Element -->
+                            <img id="slide-img-${idx}" class="w-full h-full object-contain cursor-pointer hover:scale-105 transition-transform duration-700 hidden" 
+                                 onclick="toggleImageControls(${idx})">
+                            
+                            <!-- Gallery Controls (Bottom Overlay) -->
+                            <div id="slide-img-controls-${idx}" class="absolute bottom-0 w-full bg-black/60 backdrop-blur-sm p-2 flex justify-between items-center text-white hidden opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onclick="prevImage(${idx})" class="p-2 hover:bg-white/20 rounded"><i class="fas fa-chevron-left"></i></button>
+                                <span id="slide-img-counter-${idx}" class="text-xs font-mono">1/1</span>
+                                <button onclick="nextImage(${idx})" class="p-2 hover:bg-white/20 rounded"><i class="fas fa-chevron-right"></i></button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                 <div class="absolute bottom-4 right-4 text-slate-300 text-sm font-mono">PlaudViewer</div>
+
+                <div class="absolute bottom-4 right-4 text-slate-300 text-sm font-mono">PlaudViewer</div>
              `;
+
+            // Fetch Image if needed
+            if (slide.imageQuery) {
+                fetchSlideImage(idx, slide.imageQuery);
+            } else {
+                document.getElementById(`slide-img-loader-${idx}`).classList.add('hidden');
+                document.getElementById(`slide-image-wrapper-${idx}`).innerHTML = '<p class="text-slate-300 italic">Sin imagen</p>';
+            }
+        };
+
+        // --- IMAGE FETCHING & GALLERY LOGIC ---
+        window.activeImageRequests = {};
+
+        async function fetchSlideImage(idx, query) {
+            const slide = window.currentSlides[idx];
+
+            // Si ya tenemos imágenes cacheadas, no buscar de nuevo
+            if (slide.cachedImages && slide.cachedImages.length > 0) {
+                renderSlideImage(idx);
+                return;
+            }
+
+            // Evitar duplicar requests
+            if (window.activeImageRequests[idx]) return;
+            window.activeImageRequests[idx] = true;
+
+            console.log(`Buscando imagen para slide ${idx}: ${query}`);
+
+            try {
+                const response = await fetch(`https://images.logise1123.workers.dev/?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+
+                if (data.success && data.results && data.results.length > 0) {
+                    slide.cachedImages = data.results;
+                    // Elegir una random inicial
+                    slide.currentImageIndex = Math.floor(Math.random() * data.results.length);
+                } else {
+                    slide.cachedImages = []; // Fallback empty
+                }
+            } catch (e) {
+                console.error("Error fetching image:", e);
+                slide.cachedImages = [];
+            } finally {
+                delete window.activeImageRequests[idx];
+                renderSlideImage(idx);
+            }
+        }
+
+        function renderSlideImage(idx) {
+            // Check if we are still on the same slide (usuario podría haber cambiado rápido)
+            if (window.currentSlideIndex !== idx) return;
+
+            const slide = window.currentSlides[idx];
+            const loader = document.getElementById(`slide-img-loader-${idx}`);
+            const img = document.getElementById(`slide-img-${idx}`);
+            const controls = document.getElementById(`slide-img-controls-${idx}`);
+            const counter = document.getElementById(`slide-img-counter-${idx}`);
+
+            if (!loader || !img) return;
+
+            loader.classList.add('hidden');
+
+            if (slide.cachedImages && slide.cachedImages.length > 0) {
+                const currentImgData = slide.cachedImages[slide.currentImageIndex || 0];
+
+                img.src = currentImgData.image;
+                img.classList.remove('hidden');
+
+                // Setup gallery controls if > 1 image
+                if (slide.cachedImages.length > 1) {
+                    controls.classList.remove('hidden');
+                    counter.innerText = `${(slide.currentImageIndex || 0) + 1} / ${slide.cachedImages.length}`;
+                } else {
+                    controls.classList.add('hidden');
+                }
+
+            } else {
+                img.alt = "No se encontraron imágenes";
+                // Placeholder error
+                document.getElementById(`slide-image-wrapper-${idx}`).innerHTML += '<p class="text-red-300 text-xs absolute">Falló carga imagen</p>';
+            }
+        }
+
+        window.nextImage = (idx) => {
+            const slide = window.currentSlides[idx];
+            if (!slide.cachedImages) return;
+
+            slide.currentImageIndex = (slide.currentImageIndex + 1) % slide.cachedImages.length;
+            renderSlideImage(idx);
+        };
+
+        window.prevImage = (idx) => {
+            const slide = window.currentSlides[idx];
+            if (!slide.cachedImages) return;
+
+            slide.currentImageIndex = (slide.currentImageIndex - 1 + slide.cachedImages.length) % slide.cachedImages.length;
+            renderSlideImage(idx);
+        };
+
+        window.toggleImageControls = (idx) => {
+            // Optional: Make image fullscreen or just emphasize controls
+            // For now, hover is enough, but this function handles the click requirement
+            const controls = document.getElementById(`slide-img-controls-${idx}`);
+            if (controls) controls.classList.toggle('opacity-0');
         };
 
         window.nextSlide = () => {
@@ -1304,7 +1457,7 @@
             let prompt = "";
             let jsonKey = "";
 
-            const commonInstruction = "IMPORTANTE: Ignora completamente cualquier interrupción de la clase (regaños, alumnos hablando, anuncios administrativos, disciplina, chistes fuera de lugar, preguntas irrelevantes). Céntrate ÚNICAMENTE en el contenido educativo explicado por el profesor.";
+            const commonInstruction = "IMPORTANTE: El texto contiene la transcripción completa de la clase, incluyendo interrupciones, ruido, comentarios irrelevantes o discusiones no educativas. Tu tarea es FILTRAR INTELIGENTEMENTE: ignora las interrupciones y quedate solo con el contenido educativo valioso y coherente. No menciones las interrupciones en el resumen final. Extrae la lección real oculta entre el ruido.";
 
             if (type === 'summary') {
                 jsonKey = "summary_data";
@@ -1368,12 +1521,21 @@
                 jsonKey = "presentation_data";
                 prompt = `
                     Genera el contenido para una presentación de ${amount} diapositivas sobre esta clase.
+                    
+                    Para cada diapositiva, decide un formato de diseño ("layout") que puede ser: "left", "center", o "right" (determina dónde va el texto).
+                    También incluye un "imageQuery" corto y específico para buscar una imagen relevante (ej: "mitocondria estructura 3d", "mapa europa siglo xix").
+                    
                     ${commonInstruction}
+                    
                     Formato JSON:
                     {
                         "slides": [
-                            {"title": "Título Slide 1", "points": ["Punto clave 1", "Punto clave 2"]},
-                            {"title": "Título Slide 2", "points": ["..."]}
+                            {
+                                "title": "Título Slide 1",
+                                "points": ["Punto clave 1", "Punto clave 2"],
+                                "layout": "left", 
+                                "imageQuery": "concepto abstracto innovacion"
+                            }
                         ]
                     }
                     Transcripción: "${contextForAI}"
